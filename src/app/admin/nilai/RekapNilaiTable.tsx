@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { SubmitButton } from "@/components/FormBits";
 import { unlockPenilaianAction } from "../actions";
 
@@ -29,6 +29,8 @@ export type PenilaianRowView = {
   details: NilaiDetailView[];
 };
 
+const PAGE_SIZE = 20;
+
 export function RekapNilaiTable({
   rows,
   fase,
@@ -39,6 +41,7 @@ export function RekapNilaiTable({
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "FINAL" | "DRAFT">("ALL");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [page, setPage] = useState(1);
 
   const toggleRow = (id: number) => {
     setExpandedIds((prev) => {
@@ -50,14 +53,6 @@ export function RekapNilaiTable({
       }
       return next;
     });
-  };
-
-  const toggleAll = () => {
-    if (expandedIds.size === filteredRows.length) {
-      setExpandedIds(new Set());
-    } else {
-      setExpandedIds(new Set(filteredRows.map((r) => r.id)));
-    }
   };
 
   const filteredRows = useMemo(() => {
@@ -76,13 +71,43 @@ export function RekapNilaiTable({
     });
   }, [rows, q, statusFilter]);
 
-  const allExpanded = filteredRows.length > 0 && expandedIds.size === filteredRows.length;
+  // Reset ke halaman 1 setiap kali query pencarian atau filter status berganti
+  useEffect(() => {
+    setPage(1);
+  }, [q, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const paginatedRows = filteredRows.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const goToPage = (p: number) => {
+    const valid = Math.min(totalPages, Math.max(1, p));
+    setPage(valid);
+  };
+
+  const allExpanded = paginatedRows.length > 0 && paginatedRows.every((r) => expandedIds.has(r.id));
+
+  const toggleAllOnPage = () => {
+    if (allExpanded) {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        for (const r of paginatedRows) next.delete(r.id);
+        return next;
+      });
+    } else {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        for (const r of paginatedRows) next.add(r.id);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="space-y-4">
       {/* Kontrol Pencarian & Filter Status */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 max-w-md">
+        <div className="flex flex-1 items-center gap-2 max-w-md w-full">
           <input
             className="input text-base py-2.5"
             placeholder="🔍 Cari ID karya / peserta / juri…"
@@ -101,7 +126,7 @@ export function RekapNilaiTable({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="flex rounded-lg border border-line bg-panel2 p-1">
             <button
               type="button"
@@ -134,16 +159,22 @@ export function RekapNilaiTable({
 
           <button
             type="button"
-            onClick={toggleAll}
+            onClick={toggleAllOnPage}
             className="btn btn-ghost btn-sm text-xs font-bold"
           >
-            {allExpanded ? "▲ Tutup Semua Rincian" : "▼ Buka Semua Rincian"}
+            {allExpanded ? "▲ Tutup Rincian" : "▼ Buka Rincian"}
           </button>
         </div>
       </div>
 
-      {/* Tabel Utama Rekap Nilai — Presisi Kolom Sejajar */}
-      <div className="card table-wrap shadow-xl">
+      {/* Indikator Status Menampilkan */}
+      <div className="text-xs font-semibold text-[#ded7c8]">
+        Menampilkan <strong>{filteredRows.length === 0 ? 0 : startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, filteredRows.length)}</strong> dari total <strong>{filteredRows.length}</strong> penilaian juri
+        {filteredRows.length > PAGE_SIZE && <span> (20 baris per halaman)</span>}
+      </div>
+
+      {/* TAMPILAN 1: DESKTOP & TABLET (Tabel Rapi Sejajar + Child Row Expandable) */}
+      <div className="hidden sm:block card table-wrap shadow-xl">
         <table className="tbl">
           <thead>
             <tr>
@@ -166,7 +197,7 @@ export function RekapNilaiTable({
                 </td>
               </tr>
             ) : (
-              filteredRows.map((r) => {
+              paginatedRows.map((r) => {
                 const isExpanded = expandedIds.has(r.id);
                 return (
                   <React.Fragment key={r.id}>
@@ -350,6 +381,173 @@ export function RekapNilaiTable({
           </tbody>
         </table>
       </div>
+
+      {/* TAMPILAN 2: MOBILE SMARTPHONE (< 640px) — Kartu Responsif Mewah */}
+      <div className="sm:hidden space-y-3">
+        {filteredRows.length === 0 ? (
+          <div className="card p-6 text-center text-muted">
+            Tidak ada data penilaian yang cocok.
+          </div>
+        ) : (
+          paginatedRows.map((r) => {
+            const isExpanded = expandedIds.has(r.id);
+            return (
+              <div
+                key={r.id}
+                className={`card p-4 space-y-3 transition-all ${
+                  isExpanded ? "border-gold bg-panel/95" : "border-line"
+                }`}
+              >
+                {/* Header Kartu Mobile */}
+                <div className="flex items-start justify-between gap-2 border-b border-line pb-2.5">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#ded7c8]">
+                      ID Penilaian
+                    </span>
+                    <h3 className="font-title text-lg font-black text-gold-light">
+                      {r.kodeKarya}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="badge badge-gold font-bold text-[11px]">
+                      {r.kodeJuri}
+                    </span>
+                    <span
+                      className={`badge text-[11px] font-bold ${
+                        r.status === "FINAL" ? "badge-ok" : "badge-warn"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Konten Karya & Juri */}
+                <div>
+                  <h4 className="font-bold text-white text-base leading-tight">{r.namaKarya}</h4>
+                  <p className="text-xs text-[#ded7c8] mt-0.5">
+                    Bengkel: <strong className="text-white">{r.namaPeserta}</strong> ({r.kodePeserta})
+                  </p>
+                  <p className="text-xs text-gold-light mt-1 font-semibold">
+                    Dewan Juri: <span className="text-white">{r.namaJuri}</span>
+                  </p>
+                </div>
+
+                {/* Skor & Tombol Aksi */}
+                <div className="flex items-center justify-between pt-2 border-t border-line/60">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#ded7c8] block">
+                      Total Skor
+                    </span>
+                    <span className="font-title text-2xl font-black gold-text">
+                      {r.skorJuriFormatted}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleRow(r.id)}
+                      className={`btn btn-sm text-xs font-bold ${
+                        isExpanded ? "btn-gold shadow" : "btn-ghost"
+                      }`}
+                    >
+                      {isExpanded ? "Tutup ▲" : "Rincian Nilai ▼"}
+                    </button>
+
+                    {r.status === "FINAL" && fase === "PENJURIAN" && (
+                      <form action={unlockPenilaianAction}>
+                        <input type="hidden" name="id" value={r.id} />
+                        <SubmitButton
+                          className="btn btn-ghost btn-sm text-xs text-warn font-bold"
+                          confirm={`Buka kunci nilai ${r.kodeKarya} oleh juri ${r.kodeJuri}?`}
+                        >
+                          🔓
+                        </SubmitButton>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+                {/* Detail Breakdown Saat Di-expand di Mobile */}
+                {isExpanded && (
+                  <div className="rounded-xl border border-gold-dark/60 bg-[#1a1714] p-3 space-y-2 mt-2">
+                    <div className="text-xs font-bold text-gold-light border-b border-line pb-1.5 flex justify-between">
+                      <span>Rincian Bobot ({r.kodeJuri})</span>
+                      <span className="text-[10px] text-[#ded7c8]">{r.updatedAtFormatted}</span>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {r.details.map((d) => (
+                        <div key={d.id} className="flex items-center justify-between text-xs border-b border-line/40 pb-1">
+                          <div>
+                            <span className="font-bold text-white block">{d.kriteriaNama}</span>
+                            <span className="text-[10px] text-gold-light">Bobot {d.bobotPersen}% · Nilai: {d.nilai}</span>
+                          </div>
+                          <div className="text-right num font-black text-white">
+                            {d.poinFormatted} <span className="text-[10px] text-gold-light">poin</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {r.catatan && (
+                      <div className="mt-2 text-xs text-[#ded7c8] bg-panel2/70 p-2 rounded border border-line">
+                        <strong className="text-gold-light">Catatan:</strong> &quot;{r.catatan}&quot;
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Kontrol Pagination — HANYA TAMPIL JIKA DATA MELEBIHI 20 BARIS */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-line/70">
+          <div className="text-xs font-semibold text-[#ded7c8] order-2 sm:order-1">
+            Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong> (20 baris per halaman)
+          </div>
+
+          <div className="flex items-center gap-1.5 order-1 sm:order-2">
+            <button
+              type="button"
+              onClick={() => goToPage(page - 1)}
+              disabled={page <= 1}
+              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+            >
+              ‹ Sebelumnya
+            </button>
+
+            {/* Nomor Halaman */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => goToPage(p)}
+                className={`min-w-8 h-8 rounded-md text-xs font-bold transition-all ${
+                  page === p
+                    ? "bg-gold text-ink shadow-md font-black"
+                    : "bg-panel2 border border-line text-[#ded7c8] hover:text-white hover:border-gold"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => goToPage(page + 1)}
+              disabled={page >= totalPages}
+              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+            >
+              Berikutnya ›
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

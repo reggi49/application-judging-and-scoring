@@ -214,66 +214,122 @@ function RankingTable({
   juri: { id: number; kodeJuri: string; nama: string }[];
   showRank: boolean;
 }) {
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const paginatedRows = rows.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const goToPage = (p: number) => {
+    const valid = Math.min(totalPages, Math.max(1, p));
+    setPage(valid);
+  };
+
   return (
-    <table className="tbl">
-      <thead>
-        <tr>
-          {showRank && <th className="w-16 text-center">Rank</th>}
-          <th>ID Karya</th>
-          <th>Karya / Peserta</th>
-          <th className="num text-center">Juri Final</th>
-          {juri.map((j) => (
-            <th key={j.id} className="num text-right">
-              {j.kodeJuri}
-            </th>
-          ))}
-          <th className="num text-right font-bold">Total</th>
-          <th className="num text-right font-bold text-gold-light">Rata-rata</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => {
-          const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
-          const rankCls =
-            r.peringkat === 1
-              ? "bg-gold/15 border-l-4 border-l-gold"
-              : r.peringkat === 2
-                ? "bg-slate-300/10 border-l-4 border-l-slate-300"
-                : r.peringkat === 3
-                  ? "bg-amber-600/15 border-l-4 border-l-amber-600"
-                  : undefined;
-          return (
-            <tr key={r.karyaId} className={rankCls}>
-              {showRank && (
-                <td className="num text-center font-title text-xl font-black">
-                  {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
-                  {r.seri && <span className="block text-xs font-bold text-warn">SERI</span>}
+    <div>
+      <table className="tbl">
+        <thead>
+          <tr>
+            {showRank && <th className="w-16 text-center">Rank</th>}
+            <th>ID Karya</th>
+            <th>Karya / Peserta</th>
+            <th className="num text-center">Juri Final</th>
+            {juri.map((j) => (
+              <th key={j.id} className="num text-right">
+                {j.kodeJuri}
+              </th>
+            ))}
+            <th className="num text-right font-bold">Total</th>
+            <th className="num text-right font-bold text-gold-light">Rata-rata</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paginatedRows.map((r) => {
+            const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
+            const rankCls =
+              r.peringkat === 1
+                ? "bg-gold/15 border-l-4 border-l-gold"
+                : r.peringkat === 2
+                  ? "bg-slate-300/10 border-l-4 border-l-slate-300"
+                  : r.peringkat === 3
+                    ? "bg-amber-600/15 border-l-4 border-l-amber-600"
+                    : undefined;
+            return (
+              <tr key={r.karyaId} className={rankCls}>
+                {showRank && (
+                  <td className="num text-center font-title text-xl font-black">
+                    {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
+                    {r.seri && <span className="block text-xs font-bold text-warn">SERI</span>}
+                  </td>
+                )}
+                <td className="num text-base font-black text-gold-light tracking-wide">{r.kodeKarya}</td>
+                <td>
+                  <div className="text-base font-bold text-white">{r.namaKarya}</div>
+                  <div className="text-sm font-semibold text-[#ded7c8]">
+                    {r.namaPeserta} <span className="text-gold-light font-bold">({r.kodePeserta})</span>
+                  </div>
                 </td>
-              )}
-              <td className="num text-base font-black text-gold-light tracking-wide">{r.kodeKarya}</td>
-              <td>
-                <div className="text-base font-bold text-white">{r.namaKarya}</div>
-                <div className="text-sm font-semibold text-[#ded7c8]">
-                  {r.namaPeserta} <span className="text-gold-light font-bold">({r.kodePeserta})</span>
-                </div>
-              </td>
-              <td className="num text-center">
-                <span className={`badge ${r.lengkap ? "badge-ok" : "badge-warn"}`}>
-                  {r.juriFinal}/{r.juriTotal}
-                </span>
-              </td>
-              {juri.map((j) => (
-                <td key={j.id} className="num text-right text-base font-semibold text-[#ded7c8]">
-                  {perJuriMap.get(j.id) ?? "—"}
+                <td className="num text-center">
+                  <span className={`badge ${r.lengkap ? "badge-ok" : "badge-warn"}`}>
+                    {r.juriFinal}/{r.juriTotal}
+                  </span>
                 </td>
-              ))}
-              <td className="num text-right text-lg font-bold text-white">{r.totalText}</td>
-              <td className="num gold-text font-title text-right text-2xl font-black">{r.rataText}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+                {juri.map((j) => (
+                  <td key={j.id} className="num text-right text-base font-semibold text-[#ded7c8]">
+                    {perJuriMap.get(j.id) ?? "—"}
+                  </td>
+                ))}
+                <td className="num text-right text-lg font-bold text-white">{r.totalText}</td>
+                <td className="num gold-text font-title text-right text-2xl font-black">{r.rataText}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border-t border-line/70 bg-panel2/40">
+          <div className="text-xs font-semibold text-[#ded7c8]">
+            Menampilkan <strong>{startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, rows.length)}</strong> dari <strong>{rows.length}</strong> karya (20 karya per halaman)
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => goToPage(page - 1)}
+              disabled={page <= 1}
+              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+            >
+              ‹ Sebelumnya
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => goToPage(p)}
+                className={`min-w-8 h-8 rounded-md text-xs font-bold transition-all ${
+                  page === p
+                    ? "bg-gold text-ink shadow-md font-black"
+                    : "bg-panel2 border border-line text-[#ded7c8] hover:text-white hover:border-gold"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => goToPage(page + 1)}
+              disabled={page >= totalPages}
+              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+            >
+              Berikutnya ›
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

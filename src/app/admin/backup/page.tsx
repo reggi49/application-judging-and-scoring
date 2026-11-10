@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/dal";
 import { listBackups } from "@/lib/backup";
 import { PageTitle } from "@/components/Shell";
 import { BackupTrigger } from "./BackupTrigger";
+import { AuditLogTable, type AuditLogItem } from "./AuditLogTable";
 
 export const metadata = { title: "Backup & Audit Log" };
 
@@ -12,10 +13,19 @@ export default async function AdminBackupPage() {
   const [backups, auditLogs] = await Promise.all([
     listBackups(),
     db.auditLog.findMany({
-      take: 60,
+      take: 100,
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  const auditItems: AuditLogItem[] = auditLogs.map((log) => ({
+    id: log.id.toString(),
+    createdAtText: log.createdAt.toLocaleString("id-ID"),
+    aksi: log.aksi,
+    entitas: log.entitas,
+    entitasId: log.entitasId,
+    ip: log.ip,
+  }));
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-5 space-y-6">
@@ -81,45 +91,8 @@ export default async function AdminBackupPage() {
 
       {/* Tabel Audit Log */}
       <section aria-label="Riwayat Audit Aktivitas">
-        <h2 className="font-title text-lg font-bold text-gold-light mb-3">Audit Log Sistem (60 Terakhir)</h2>
-        <div className="card table-wrap">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Waktu (WIB)</th>
-                <th>Aksi</th>
-                <th>Entitas</th>
-                <th>ID Target</th>
-                <th>IP Address</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auditLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-6 text-center text-muted">
-                    Belum ada catatan aktivitas.
-                  </td>
-                </tr>
-              ) : (
-                auditLogs.map((log) => (
-                  <tr key={log.id.toString()}>
-                    <td className="num text-xs text-muted">
-                      {log.createdAt.toLocaleString("id-ID")}
-                    </td>
-                    <td>
-                      <span className="badge font-mono text-xs text-gold-light">
-                        {log.aksi}
-                      </span>
-                    </td>
-                    <td className="text-xs text-cream">{log.entitas ?? "—"}</td>
-                    <td className="font-mono text-xs text-muted">{log.entitasId ?? "—"}</td>
-                    <td className="font-mono text-xs text-muted">{log.ip ?? "local"}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="font-title text-lg font-bold text-gold-light mb-3">Audit Log Sistem</h2>
+        <AuditLogTable items={auditItems} />
       </section>
     </main>
   );
