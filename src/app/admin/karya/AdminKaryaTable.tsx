@@ -201,3 +201,4 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
     </div>
   );
 }
+
