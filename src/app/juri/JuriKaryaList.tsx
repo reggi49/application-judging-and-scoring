@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { QrScannerModal } from "@/components/QrScannerModal";
 
 type Item = {
   id: number;
@@ -31,8 +33,21 @@ export function JuriKaryaList({
   juriNama: string;
   juriKode: string;
 }) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"ALL" | Item["status"]>("ALL");
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const handleScanSuccess = (kodeKarya: string) => {
+    setScannerOpen(false);
+    const match = items.find((it) => it.kode.toUpperCase() === kodeKarya.toUpperCase());
+    if (match) {
+      router.push(`/juri/karya/${match.kode}`);
+    } else {
+      setQ(kodeKarya);
+      router.push(`/juri/karya/${kodeKarya}`);
+    }
+  };
 
   const counts = useMemo(() => {
     const c = { BELUM: 0, DRAFT: 0, FINAL: 0, total: items.length };
@@ -84,14 +99,39 @@ export function JuriKaryaList({
         </p>
       )}
 
-      {/* Pencarian & Filter */}
+      {/* Pencarian & Pindai QR Code */}
       <div className="mb-5 space-y-3">
-        <input
-          className="input text-base font-medium py-3"
-          placeholder="🔍 Cari ID karya / nama / bengkel peserta…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              className="input text-base font-medium py-3 pr-9"
+              placeholder="🔍 Cari ID / nama / peserta…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white text-base"
+                aria-label="Hapus pencarian"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            className="btn btn-gold shrink-0 gap-1.5 px-3.5 sm:px-4 py-3 shadow-md"
+            title="Pindai QR Code pada motor peserta"
+          >
+            <span className="text-xl">📷</span>
+            <span className="font-bold text-sm sm:text-base">Scan QR</span>
+          </button>
+        </div>
+
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           {(
             [
@@ -168,6 +208,13 @@ export function JuriKaryaList({
           })}
         </ul>
       )}
+
+      {/* Modal Pemindai QR Code Smartphone */}
+      <QrScannerModal
+        isOpen={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </div>
   );
 }

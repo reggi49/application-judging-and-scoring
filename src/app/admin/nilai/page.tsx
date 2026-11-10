@@ -3,8 +3,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/dal";
 import { getEvent } from "@/lib/event";
 import { PageTitle } from "@/components/Shell";
-import { SubmitButton } from "@/components/FormBits";
-import { unlockPenilaianAction } from "../actions";
+import { RekapNilaiTable, type PenilaianRowView } from "./RekapNilaiTable";
 
 export const metadata = { title: "Rekap Nilai Penjurian" };
 
@@ -17,17 +16,58 @@ export default async function AdminNilaiPage() {
       include: {
         juri: true,
         karya: { include: { peserta: true } },
-        detail: { include: { kriteria: true } },
+        detail: {
+          include: { kriteria: true },
+          orderBy: { kriteria: { urutan: "asc" } },
+        },
       },
       orderBy: [{ updatedAt: "desc" }],
     }),
   ]);
 
+  const rows: PenilaianRowView[] = penilaian.map((p) => {
+    const details = p.detail.map((d) => {
+      const bobot = Number(d.kriteria.bobot);
+      const poin = (d.nilai * bobot) / 100;
+      return {
+        id: d.id,
+        kriteriaId: d.kriteriaId,
+        nilai: d.nilai,
+        kriteriaKode: d.kriteria.kode,
+        kriteriaNama: d.kriteria.nama,
+        bobotPersen: bobot,
+        poinFormatted: poin.toFixed(2).replace(".", ","),
+      };
+    });
+
+    const skor = p.skorJuri ? Number(p.skorJuri).toFixed(2).replace(".", ",") : "—";
+    const dateFormatted = new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(p.updatedAt);
+
+    return {
+      id: p.id,
+      kodeKarya: p.karya.kodeKarya,
+      namaKarya: p.karya.namaKarya,
+      namaPeserta: p.karya.peserta.nama,
+      kodePeserta: p.karya.peserta.kodePeserta,
+      kodeJuri: p.juri.kodeJuri,
+      namaJuri: p.juri.nama,
+      status: p.status,
+      skorJuriFormatted: skor,
+      inputOleh: p.inputOleh,
+      catatan: p.catatan,
+      updatedAtFormatted: dateFormatted,
+      details,
+    };
+  });
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-5">
       <PageTitle
         title="Rekap Nilai Penjurian"
-        subtitle="Rincian seluruh nilai yang masuk dari dewan juri, status draft/final, dan kontrol unlock."
+        subtitle="Rincian seluruh nilai yang masuk dari dewan juri, detail per kriteria & bobot, status, serta kontrol unlock."
         actions={
           <Link href="/admin/nilai/input" className="btn btn-gold btn-sm">
             ⚡ Input Nilai Pengganti (Fallback)
@@ -35,81 +75,7 @@ export default async function AdminNilaiPage() {
         }
       />
 
-      <div className="card table-wrap">
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>ID Karya</th>
-              <th>Nama Karya & Peserta</th>
-              <th>Juri</th>
-              <th className="num text-center">Status</th>
-              <th className="num text-right">Skor Total</th>
-              <th className="text-center">Input Oleh</th>
-              <th className="text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {penilaian.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-muted">
-                  Belum ada nilai yang masuk dari dewan juri.
-                </td>
-              </tr>
-            ) : (
-              penilaian.map((p) => (
-                <tr key={p.id}>
-                  <td className="num font-semibold text-gold-light">{p.karya.kodeKarya}</td>
-                  <td>
-                    <div className="font-semibold text-cream">{p.karya.namaKarya}</div>
-                    <div className="text-xs text-muted">
-                      {p.karya.peserta.nama} ({p.karya.peserta.kodePeserta})
-                    </div>
-                  </td>
-                  <td>
-                    <div className="font-semibold text-cream">{p.juri.nama}</div>
-                    <div className="text-xs text-muted">{p.juri.kodeJuri}</div>
-                  </td>
-                  <td className="num text-center">
-                    <span className={`badge ${p.status === "FINAL" ? "badge-ok" : "badge-warn"}`}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="num text-right">
-                    <span className="font-title text-base font-bold text-gold-light">
-                      {p.skorJuri ? p.skorJuri.toFixed(2).replace(".", ",") : "—"}
-                    </span>
-                  </td>
-                  <td className="text-center">
-                    <span
-                      className={`badge ${
-                        p.inputOleh === "ADMIN" ? "badge-warn" : "badge-gold"
-                      }`}
-                    >
-                      {p.inputOleh}
-                    </span>
-                  </td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {p.status === "FINAL" && ev.fase === "PENJURIAN" && (
-                        <form action={unlockPenilaianAction}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <SubmitButton
-                            className="btn btn-ghost btn-sm text-xs text-warn"
-                            confirm={`Buka kunci nilai ${p.karya.kodeKarya} oleh juri ${p.juri.kodeJuri}? Nilai akan kembali ke DRAFT dan dapat diedit oleh juri.`}
-                          >
-                            🔓 Buka Kunci
-                          </SubmitButton>
-                        </form>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <RekapNilaiTable rows={rows} fase={ev.fase} />
     </main>
   );
 }
-

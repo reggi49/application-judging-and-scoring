@@ -304,8 +304,12 @@ export function PenilaianPanel(p: PanelProps) {
 
   const step = (kode: string, delta: number) => {
     const cur = values[kode] === "" ? null : Number(values[kode]);
-    const base = cur ?? (delta > 0 ? -1 : 101);
-    const nxt = Math.min(100, Math.max(0, base + delta));
+    let nxt: number;
+    if (cur === null || isNaN(cur)) {
+      nxt = delta > 0 ? 75 : 70;
+    } else {
+      nxt = Math.min(100, Math.max(0, cur + delta));
+    }
     setNilai(kode, String(nxt));
   };
 
@@ -463,9 +467,10 @@ export function PenilaianPanel(p: PanelProps) {
                       <button
                         type="button"
                         className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
-                        onClick={() => step(k.kode, -1)}
+                        onClick={() => step(k.kode, -5)}
                         disabled={!canEdit}
-                        aria-label={`Kurangi nilai ${k.nama}`}
+                        aria-label={`Kurangi 5 poin nilai ${k.nama}`}
+                        title="Kurangi 5 poin"
                       >
                         −
                       </button>
@@ -485,9 +490,10 @@ export function PenilaianPanel(p: PanelProps) {
                       <button
                         type="button"
                         className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
-                        onClick={() => step(k.kode, 1)}
+                        onClick={() => step(k.kode, 5)}
                         disabled={!canEdit}
-                        aria-label={`Tambah nilai ${k.nama}`}
+                        aria-label={`Tambah 5 poin nilai ${k.nama}`}
+                        title="Tambah 5 poin"
                       >
                         +
                       </button>
