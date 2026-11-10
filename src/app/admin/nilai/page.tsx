@@ -56,7 +56,6 @@ export default async function AdminNilaiPage() {
       namaJuri: p.juri.nama,
       status: p.status,
       skorJuriFormatted: skor,
-      inputOleh: p.inputOleh,
       catatan: p.catatan,
       updatedAtFormatted: dateFormatted,
       details,
