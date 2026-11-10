@@ -106,3 +106,4 @@ export function AuditLogTable({ items }: { items: AuditLogItem[] }) {
     </div>
   );
 }
+

@@ -27,10 +27,10 @@ export default async function AdminJuriPage() {
   }));
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-5">
+    <main className="mx-auto max-w-7xl px-3 sm:px-4 py-3 sm:py-5">
       <PageTitle
         title="Dewan Juri"
-        subtitle="Kelola akun dewan juri, status aktif, dan reset password akses login."
+        subtitle={`Kelola ${juriList.length} akun dewan juri resmi, status keaktifan, dan progres penilaian karya RWSA 2026.`}
       />
       <JuriManager juriList={juriList} />
     </main>
