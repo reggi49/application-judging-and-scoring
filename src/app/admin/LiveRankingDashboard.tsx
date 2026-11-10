@@ -227,65 +227,166 @@ function RankingTable({
 
   return (
     <div>
-      <table className="tbl">
-        <thead>
-          <tr>
-            {showRank && <th className="w-16 text-center">Rank</th>}
-            <th>ID Karya</th>
-            <th>Karya / Peserta</th>
-            <th className="num text-center">Juri Final</th>
-            {juri.map((j) => (
-              <th key={j.id} className="num text-right">
-                {j.kodeJuri}
-              </th>
-            ))}
-            <th className="num text-right font-bold">Total</th>
-            <th className="num text-right font-bold text-gold-light">Rata-rata</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedRows.map((r) => {
-            const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
-            const rankCls =
-              r.peringkat === 1
-                ? "bg-gold/15 border-l-4 border-l-gold"
-                : r.peringkat === 2
-                  ? "bg-slate-300/10 border-l-4 border-l-slate-300"
-                  : r.peringkat === 3
-                    ? "bg-amber-600/15 border-l-4 border-l-amber-600"
-                    : undefined;
-            return (
-              <tr key={r.karyaId} className={rankCls}>
-                {showRank && (
-                  <td className="num text-center font-title text-xl font-black">
-                    {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
-                    {r.seri && <span className="block text-xs font-bold text-warn">SERI</span>}
+      {/* TAMPILAN 1: DESKTOP & TABLET (Tabel Lengkap Sejajar) */}
+      <div className="hidden sm:block">
+        <table className="tbl">
+          <thead>
+            <tr>
+              {showRank && <th className="w-16 text-center">Rank</th>}
+              <th>ID Karya</th>
+              <th>Karya / Peserta</th>
+              <th className="num text-center">Juri Final</th>
+              {juri.map((j) => (
+                <th key={j.id} className="num text-right">
+                  {j.kodeJuri}
+                </th>
+              ))}
+              <th className="num text-right font-bold">Total</th>
+              <th className="num text-right font-bold text-gold-light">Rata-rata</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedRows.map((r) => {
+              const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
+              const rankCls =
+                r.peringkat === 1
+                  ? "bg-gold/15 border-l-4 border-l-gold"
+                  : r.peringkat === 2
+                    ? "bg-slate-300/10 border-l-4 border-l-slate-300"
+                    : r.peringkat === 3
+                      ? "bg-amber-600/15 border-l-4 border-l-amber-600"
+                      : undefined;
+              return (
+                <tr key={r.karyaId} className={rankCls}>
+                  {showRank && (
+                    <td className="num text-center font-title text-xl font-black">
+                      {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
+                      {r.seri && <span className="block text-xs font-bold text-warn">SERI</span>}
+                    </td>
+                  )}
+                  <td className="num text-base font-black text-gold-light tracking-wide">{r.kodeKarya}</td>
+                  <td>
+                    <div className="text-base font-bold text-white">{r.namaKarya}</div>
+                    <div className="text-sm font-semibold text-[#ded7c8]">
+                      {r.namaPeserta} <span className="text-gold-light font-bold">({r.kodePeserta})</span>
+                    </div>
                   </td>
-                )}
-                <td className="num text-base font-black text-gold-light tracking-wide">{r.kodeKarya}</td>
-                <td>
-                  <div className="text-base font-bold text-white">{r.namaKarya}</div>
-                  <div className="text-sm font-semibold text-[#ded7c8]">
-                    {r.namaPeserta} <span className="text-gold-light font-bold">({r.kodePeserta})</span>
-                  </div>
-                </td>
-                <td className="num text-center">
-                  <span className={`badge ${r.lengkap ? "badge-ok" : "badge-warn"}`}>
-                    {r.juriFinal}/{r.juriTotal}
+                  <td className="num text-center">
+                    <span className={`badge ${r.lengkap ? "badge-ok" : "badge-warn"}`}>
+                      {r.juriFinal}/{r.juriTotal}
+                    </span>
+                  </td>
+                  {juri.map((j) => (
+                    <td key={j.id} className="num text-right text-base font-semibold text-[#ded7c8]">
+                      {perJuriMap.get(j.id) ?? "—"}
+                    </td>
+                  ))}
+                  <td className="num text-right text-lg font-bold text-white">{r.totalText}</td>
+                  <td className="num gold-text font-title text-right text-2xl font-black">{r.rataText}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* TAMPILAN 2: MOBILE SMARTPHONE (< 640px) — Kartu Podium Eksekutif */}
+      <div className="sm:hidden space-y-3 p-3">
+        {paginatedRows.map((r) => {
+          const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
+          const isJuara1 = r.peringkat === 1;
+          const isJuara2 = r.peringkat === 2;
+          const isJuara3 = r.peringkat === 3;
+
+          return (
+            <div
+              key={r.karyaId}
+              className={`rounded-xl border p-4 space-y-3 transition-all ${
+                isJuara1
+                  ? "border-gold bg-gradient-to-br from-[#302617] to-panel shadow-lg"
+                  : isJuara2
+                    ? "border-slate-400/60 bg-gradient-to-br from-[#242628] to-panel"
+                    : isJuara3
+                      ? "border-amber-700/60 bg-gradient-to-br from-[#2d2116] to-panel"
+                      : "border-line bg-panel2/60"
+              }`}
+            >
+              {/* Header Baris Ranking */}
+              <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  {showRank && (
+                    <span
+                      className={`px-2.5 py-1 rounded-md font-title text-xs font-black ${
+                        isJuara1
+                          ? "bg-gold text-ink"
+                          : isJuara2
+                            ? "bg-slate-300 text-ink"
+                            : isJuara3
+                              ? "bg-amber-600 text-white"
+                              : "bg-panel2 border border-line text-white"
+                      }`}
+                    >
+                      {isJuara1
+                        ? "🥇 Juara 1"
+                        : isJuara2
+                          ? "🥈 Juara 2"
+                          : isJuara3
+                            ? "🥉 Juara 3"
+                            : `#${r.peringkat}`}
+                    </span>
+                  )}
+                  {r.seri && <span className="badge badge-warn text-xs font-bold">SERI</span>}
+                </div>
+
+                <span className="font-title text-lg font-black text-gold-light tracking-wide">
+                  {r.kodeKarya}
+                </span>
+              </div>
+
+              {/* Informasi Motor & Peserta */}
+              <div>
+                <h3 className="font-bold text-white text-base leading-tight">{r.namaKarya}</h3>
+                <p className="text-xs text-[#ded7c8] mt-0.5">
+                  Bengkel: <strong className="text-white">{r.namaPeserta}</strong> ({r.kodePeserta})
+                </p>
+              </div>
+
+              {/* Skor Rata-rata & Total */}
+              <div className="flex items-end justify-between rounded-lg bg-black/40 p-3 border border-line/60">
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#ded7c8] block">
+                    Skor Rata-Rata
                   </span>
-                </td>
+                  <span className="num font-title text-3xl font-black gold-text">
+                    {r.rataText}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-semibold text-[#ded7c8] block">
+                    Total ({r.juriFinal}/{r.juriTotal} juri):
+                  </span>
+                  <span className="num font-title text-lg font-bold text-white">
+                    {r.totalText}
+                  </span>
+                </div>
+              </div>
+
+              {/* Nilai per Juri */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] font-bold text-[#ded7c8] mr-1">Detail:</span>
                 {juri.map((j) => (
-                  <td key={j.id} className="num text-right text-base font-semibold text-[#ded7c8]">
-                    {perJuriMap.get(j.id) ?? "—"}
-                  </td>
+                  <span
+                    key={j.id}
+                    className="badge badge-sm border border-line bg-panel font-mono text-xs text-[#ded7c8]"
+                  >
+                    {j.kodeJuri}: <strong className="text-gold-light ml-0.5">{perJuriMap.get(j.id) ?? "—"}</strong>
+                  </span>
                 ))}
-                <td className="num text-right text-lg font-bold text-white">{r.totalText}</td>
-                <td className="num gold-text font-title text-right text-2xl font-black">{r.rataText}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border-t border-line/70 bg-panel2/40">
