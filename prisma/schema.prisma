@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  JURI
+}
+
+enum Fase {
+  PERSIAPAN
+  PENJURIAN
+  SELESAI
+}
+
+enum StatusPenilaian {
+  DRAFT
+  FINAL
+}
+
+enum InputOleh {
+  JURI
+  ADMIN
+}
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  username           String    @unique @db.VarChar(50)
+  passwordHash       String    @map("password_hash") @db.VarChar(255)
+  role               Role
+  isActive           Boolean   @default(true) @map("is_active")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  failedLogins       Int       @default(0) @map("failed_logins")
+  lockedUntil        DateTime? @map("locked_until")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  juri     Juri?
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Session {
+  /// SHA-256 dari token (token asli hanya ada di cookie)
+  id        String   @id @db.Char(64)
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Juri {
+  id        Int       @id @default(autoincrement())
+  kodeJuri  String    @unique @map("kode_juri") @db.VarChar(20)
+  nama      String    @db.VarChar(120)
+  userId    Int       @unique @map("user_id")
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id])
+
+  penilaian Penilaian[]
+
+  @@map("juri")
+}
+
+model Peserta {
+  id           Int       @id @default(autoincrement())
+  /// ID Peserta = akronim (2-5 karakter A-Z/0-9)
+  kodePeserta  String    @unique @map("kode_peserta") @db.VarChar(5)
+  nama         String    @db.VarChar(150)
+  deskripsi    String?   @db.Text
+  /// Penghitung nomor urut karya per peserta. Hanya bertambah (tidak dipakai ulang).
+  karyaCounter Int       @default(0) @map("karya_counter")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  karya Karya[]
+
+  @@map("peserta")
+}
+
+model Karya {
+  id           Int       @id @default(autoincrement())
+  pesertaId    Int       @map("peserta_id")
+  akronimKarya String    @map("akronim_karya") @db.VarChar(5)
+  noUrut       Int       @map("no_urut")
+  /// Mis. BRM-CLS-001 = kodePeserta + akronimKarya + noUrut(3 digit)
+  kodeKarya    String    @unique @map("kode_karya") @db.VarChar(20)
+  namaKarya    String    @map("nama_karya") @db.VarChar(150)
+  deskripsi    String?   @db.Text
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  peserta   Peserta       @relation(fields: [pesertaId], references: [id])
+  gambar    KaryaGambar[]
+  penilaian Penilaian[]
+
+  @@unique([pesertaId, noUrut])
+  @@map("karya")
+}
+
+model KaryaGambar {
+  id            Int      @id @default(autoincrement())
+  karyaId       Int      @map("karya_id")
+  filename      String   @db.VarChar(80)
+  thumbFilename String   @map("thumb_filename") @db.VarChar(80)
+  urutan        Int      @default(0)
+  isCover       Boolean  @default(false) @map("is_cover")
+  mime          String   @db.VarChar(40)
+  size          Int
+  createdAt     DateTime @default(now()) @map("created_at")
+  karya         Karya    @relation(fields: [karyaId], references: [id], onDelete: Cascade)
+
+  @@index([karyaId])
+  @@map("karya_gambar")
+}
+
+model Kriteria {
+  id        Int     @id @default(autoincrement())
+  kode      String  @unique @db.VarChar(30)
+  nama      String  @db.VarChar(120)
+  deskripsi String? @db.VarChar(500)
+  /// Persen dengan 2 desimal. Total semua kriteria = 100.00
+  bobot     Decimal @db.Decimal(5, 2)
+  urutan    Int     @default(0)
+
+  detail PenilaianDetail[]
+
+  @@map("kriteria")
+}
+
+model Penilaian {
+  id              Int             @id @default(autoincrement())
+  /// UUID dari perangkat juri; membuat retry aman (idempoten)
+  clientUuid      String          @unique @map("client_uuid") @db.Char(36)
+  juriId          Int             @map("juri_id")
+  karyaId         Int             @map("karya_id")
+  status          StatusPenilaian @default(DRAFT)
+  catatan         String?         @db.Text
+  /// Skor juri terskala exact (×10.000 tidak dipakai; disimpan DECIMAL(7,4) = tepat 4 desimal)
+  skorJuri        Decimal?        @map("skor_juri") @db.Decimal(7, 4)
+  /// Versi naik tiap perubahan tersimpan di server
+  version         Int             @default(1)
+  /// Waktu ubah dari perangkat (epoch ms); mencegah data lama menimpa data baru
+  clientUpdatedAt BigInt          @default(0) @map("client_updated_at")
+  finalizedAt     DateTime?       @map("finalized_at")
+  inputOleh       InputOleh       @default(JURI) @map("input_oleh")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  juri   Juri              @relation(fields: [juriId], references: [id])
+  karya  Karya             @relation(fields: [karyaId], references: [id])
+  detail PenilaianDetail[]
+
+  @@unique([juriId, karyaId])
+  @@index([karyaId, status])
+  @@map("penilaian")
+}
+
+model PenilaianDetail {
+  id            Int      @id @default(autoincrement())
+  penilaianId   Int      @map("penilaian_id")
+  kriteriaId    Int      @map("kriteria_id")
+  /// 0-100 (dijaga juga oleh CHECK constraint di DB)
+  nilai         Int      @db.UnsignedTinyInt
+  /// Bobot saat nilai difinalkan (snapshot); null selama draft
+  bobotSnapshot Decimal? @map("bobot_snapshot") @db.Decimal(5, 2)
+
+  penilaian Penilaian @relation(fields: [penilaianId], references: [id], onDelete: Cascade)
+  kriteria  Kriteria  @relation(fields: [kriteriaId], references: [id])
+
+  @@unique([penilaianId, kriteriaId])
+  @@map("penilaian_detail")
+}
+
+/// Riwayat append-only setiap perubahan nilai
+model PenilaianHistory {
+  id           BigInt   @id @default(autoincrement())
+  penilaianId  Int      @map("penilaian_id")
+  juriId       Int      @map("juri_id")
+  karyaId      Int      @map("karya_id")
+  aksi         String   @db.VarChar(30)
+  snapshot     Json
+  actorUserId  Int?     @map("actor_user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([penilaianId])
+  @@map("penilaian_history")
+}
+
+model EventSetting {
+  id        Int      @id
+  nama      String   @db.VarChar(150)
+  fase      Fase     @default(PERSIAPAN)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("event_setting")
+}
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  aksi       String   @db.VarChar(50)
+  entitas    String?  @db.VarChar(50)
+  entitasId  String?  @map("entitas_id") @db.VarChar(50)
+  dataLama   Json?    @map("data_lama")
+  dataBaru   Json?    @map("data_baru")
+  ip         String?  @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([aksi])
+  @@map("audit_log")
+}
