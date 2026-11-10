@@ -11,7 +11,7 @@ async function main() {
   await db.eventSetting.upsert({
     where: { id: 1 },
     update: {},
-    create: { id: 1, nama: "MBtech Riding With Style Awards 2026", fase: "PERSIAPAN" },
+    create: { id: 1, nama: "MBtech Riding With Style Awards 2026", fase: "PENJURIAN" },
   });
 
   // Kriteria sesuai Rules & Regulation (poster). Hanya dibuat jika belum ada.

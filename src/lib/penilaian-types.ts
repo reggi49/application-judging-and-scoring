@@ -1,6 +1,7 @@
 /** Tipe yang dipakai bersama server & klien (tanpa import server-only). */
 export type PenilaianState = {
   id: number;
+  clientUuid: string;
   status: "DRAFT" | "FINAL";
   version: number;
   clientUpdatedAt: number;

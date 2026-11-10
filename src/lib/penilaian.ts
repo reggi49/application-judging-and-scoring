@@ -40,6 +40,7 @@ export function toState(p: PenilaianFull): PenilaianState {
   for (const d of p.detail) nilai[d.kriteria.kode] = d.nilai;
   return {
     id: p.id,
+    clientUuid: p.clientUuid,
     status: p.status,
     version: p.version,
     clientUpdatedAt: Number(p.clientUpdatedAt),

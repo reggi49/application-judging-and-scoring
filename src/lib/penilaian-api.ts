@@ -1,4 +1,5 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { savePenilaian, type SaveResult } from "./penilaian";
@@ -6,7 +7,7 @@ import { audit } from "./audit";
 
 export const penilaianBody = z.object({
   kodeKarya: z.string().regex(/^[A-Z0-9]{2,5}-[A-Z0-9]{2,5}-\d{3}$/, "Kode karya tidak valid."),
-  clientUuid: z.uuid(),
+  clientUuid: z.string().trim().min(1).max(64).default(() => randomUUID()),
   nilai: z.record(z.string().max(30), z.number().int().min(0).max(100).nullable()),
   catatan: z.string().max(2000).nullable().optional(),
   clientUpdatedAt: z.number().int().positive(),

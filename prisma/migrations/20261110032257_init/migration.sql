@@ -214,10 +214,10 @@ ALTER TABLE `kriteria`
   ADD CONSTRAINT `chk_bobot_range` CHECK (`bobot` > 0 AND `bobot` <= 100);
 
 ALTER TABLE `peserta`
-  ADD CONSTRAINT `chk_kode_peserta` CHECK (REGEXP_LIKE(`kode_peserta`, '^[A-Z0-9]{2,5}$', 'c'));
+  ADD CONSTRAINT `chk_kode_peserta` CHECK (`kode_peserta` REGEXP '^[A-Z0-9]{2,5}$');
 
 ALTER TABLE `karya`
-  ADD CONSTRAINT `chk_akronim_karya` CHECK (REGEXP_LIKE(`akronim_karya`, '^[A-Z0-9]{2,5}$', 'c')),
+  ADD CONSTRAINT `chk_akronim_karya` CHECK (`akronim_karya` REGEXP '^[A-Z0-9]{2,5}$'),
   ADD CONSTRAINT `chk_no_urut` CHECK (`no_urut` BETWEEN 1 AND 999);
 
 ALTER TABLE `penilaian`

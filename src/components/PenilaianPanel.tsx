@@ -46,6 +46,19 @@ type ServerReply =
   | { ok: true; applied: boolean; alreadyFinal?: boolean; state: PenilaianState }
   | { ok: false; code: string; message: string; state?: PenilaianState };
 
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {}
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function toInputs(kriteria: KriteriaView[], nilai: Record<string, number>) {
   const v: Record<string, string> = {};
   for (const k of kriteria) v[k.kode] = nilai[k.kode] === undefined ? "" : String(nilai[k.kode]);
@@ -68,7 +81,7 @@ export function PenilaianPanel(p: PanelProps) {
   const [hint, setHint] = useState<string | null>(null);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const uuidRef = useRef<string>("");
+  const uuidRef = useRef<string>(p.initial?.clientUuid || safeUUID());
   const tsRef = useRef<number>(p.initial?.clientUpdatedAt ?? 0);
   const dirtyRef = useRef(false);
   const valuesRef = useRef(values);
@@ -206,8 +219,13 @@ export function PenilaianPanel(p: PanelProps) {
       const local = await loadDraft(storageKey);
       if (cancelled) return;
       const server = p.initial;
-      uuidRef.current = local?.uuid || server?.id ? local?.uuid ?? crypto.randomUUID() : crypto.randomUUID();
-      if (!uuidRef.current) uuidRef.current = crypto.randomUUID();
+      if (server?.clientUuid) {
+        uuidRef.current = server.clientUuid;
+      } else if (local?.uuid) {
+        uuidRef.current = local.uuid;
+      } else if (!uuidRef.current) {
+        uuidRef.current = safeUUID();
+      }
 
       if (server?.status === "FINAL") {
         if (local) removeDraft(storageKey);
