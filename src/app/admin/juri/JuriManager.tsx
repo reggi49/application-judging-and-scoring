@@ -5,7 +5,6 @@ import type { ActionState } from "@/lib/action-state";
 import {
   createJuriAction,
   updateJuriAction,
-  resetJuriPasswordAction,
   toggleJuriAction,
   deleteJuriAction,
 } from "../actions";
@@ -22,15 +21,12 @@ type JuriItem = {
 
 export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
   const [createState, createFormAction] = useActionState(createJuriAction, {});
-  const [resetState, resetFormAction] = useActionState(resetJuriPasswordAction, {});
   const [editId, setEditId] = useState<number | null>(null);
   const [editState, editFormAction] = useActionState(updateJuriAction, {});
 
   return (
     <div className="space-y-6">
-      {/* Pesan Global (seperti password baru hasil reset atau buat juri) */}
       <FormMessage state={createState} />
-      <FormMessage state={resetState} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {/* Kolom Kiri: Tabel Juri */}
@@ -40,7 +36,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
               <thead>
                 <tr>
                   <th>ID Juri</th>
-                  <th>Nama & Username</th>
+                  <th>Nama Juri</th>
                   <th className="num text-center">Status</th>
                   <th className="num text-center">Karya Final</th>
                   <th className="text-right">Aksi</th>
@@ -87,7 +83,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                         ) : (
                           <div>
                             <div className="font-semibold text-cream">{j.nama}</div>
-                            <div className="text-xs text-muted">@{j.username}</div>
+                            <div className="text-xs text-muted">Akses login tanpa password</div>
                           </div>
                         )}
                       </td>
@@ -110,16 +106,6 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                               Edit
                             </button>
                           )}
-
-                          <form action={resetFormAction}>
-                            <input type="hidden" name="id" value={j.id} />
-                            <SubmitButton
-                              className="btn btn-ghost btn-sm text-xs"
-                              confirm={`Reset password juri ${j.kodeJuri}? Password baru akan digenerate otomatis.`}
-                            >
-                              Reset PW
-                            </SubmitButton>
-                          </form>
 
                           <form action={toggleJuriAction}>
                             <input type="hidden" name="id" value={j.id} />
@@ -161,9 +147,9 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
         <section aria-label="Tambah Juri Baru">
           <form action={createFormAction} className="card space-y-4 p-5 sm:p-6">
             <h2 className="font-title text-lg font-bold text-gold-light">Tambah Akun Juri</h2>
-            <p className="text-xs text-muted">
-              Buat akun untuk dewan juri. Password akan digenerate bila dikosongkan. Juri wajib mengganti password saat login pertama.
-            </p>
+            <div className="rounded-lg border border-gold-dark/40 bg-gold/5 p-3 text-xs text-muted leading-relaxed">
+              Dewan juri masuk ke aplikasi <strong className="text-gold-light">tanpa password</strong>. Juri cukup memilih profil namanya di layar masuk smartphone.
+            </div>
 
             <div>
               <label htmlFor="kodeJuri" className="label">
@@ -192,34 +178,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
               />
             </div>
 
-            <div>
-              <label htmlFor="username" className="label">
-                Username Login *
-              </label>
-              <input
-                id="username"
-                name="username"
-                className="input lowercase"
-                placeholder="Misal: j01, juri1"
-                autoCapitalize="none"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="label">
-                Password Awal (Opsional)
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="text"
-                className="input"
-                placeholder="Kosongkan untuk generate acak"
-              />
-            </div>
-
-            <SubmitButton className="btn btn-gold w-full">Buat Akun Juri</SubmitButton>
+            <SubmitButton className="btn btn-gold w-full">Tambah Juri Baru</SubmitButton>
           </form>
         </section>
       </div>

@@ -88,18 +88,25 @@ npm run dev
 npm run build
 npm run start
 ```
-Buka browser di `http://localhost:3000`.
+Buka browser di:
+- **Di komputer lokal**: `http://localhost:3000`
+- **Di perangkat lain (HP / Tablet / PC dalam satu jaringan Wi-Fi)**: `http://192.168.3.75:3000`
 
 ---
 
-## 🔑 Akun Bawaan (Hasil Seed)
+## 🔑 Akses & Akun Bawaan (Hasil Seed)
 
-| Role | Username | Password Awal | Catatan |
-|---|---|---|---|
-| **Admin** | `admin` | `Admin#RWSA2026` | Wajib ganti password pada login pertama |
-| **Juri 1** | `j01` | `Juri#2026` | Juri Satu |
-| **Juri 2** | `j02` | `Juri#2026` | Juri Dua |
-| **Juri 3** | `j03` | `Juri#2026` | Juri Tiga |
+Di halaman awal login, tersedia dua pilihan:
+1. **🎖️ Dewan Juri**: **Tanpa Password**. Juri cukup memilih profil namanya (J01 / J02 / J03) dari daftar atau layar sentuh smartphone untuk langsung masuk menilai.
+2. **⚙️ Administrator**: Memakai username dan password:
+   - **Username**: `admin`
+   - **Password**: `Admin#RWSA2026` (Wajib ganti password pada login pertama)
+
+| Dewan Juri | ID Juri | Metode Masuk |
+|---|---|---|
+| **Juri Satu** | `J01` | Pilih profil (tanpa password) |
+| **Juri Dua** | `J02` | Pilih profil (tanpa password) |
+| **Juri Tiga** | `J03` | Pilih profil (tanpa password) |
 
 ---
 

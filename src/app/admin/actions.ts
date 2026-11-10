@@ -269,27 +269,31 @@ const juriSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9._-]{3,50}$/, "Username 3–50 karakter (huruf kecil/angka/._-)."),
+    .regex(/^[a-z0-9._-]{2,50}$/, "Username 2–50 karakter.")
+    .optional(),
 });
 
 export async function createJuriAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireAdmin();
   const r = juriSchema.safeParse(Object.fromEntries(fd));
   if (!r.success) return fail(firstIssue(r.error));
-  const given = String(fd.get("password") ?? "").trim();
-  const password = given || genPassword();
-  if (given) {
-    const weak = validatePasswordStrength(given);
-    if (weak) return fail(weak);
-  }
+
+  const username = r.data.username || r.data.kodeJuri.toLowerCase();
+  const dummyPassword = genPassword();
+
   try {
     const u = await db.user.create({
-      data: { username: r.data.username, passwordHash: await hashPassword(password), role: "JURI", mustChangePassword: true },
+      data: {
+        username,
+        passwordHash: await hashPassword(dummyPassword),
+        role: "JURI",
+        mustChangePassword: false,
+      },
     });
     const j = await db.juri.create({ data: { kodeJuri: r.data.kodeJuri, nama: r.data.nama, userId: u.id } });
-    await audit({ userId: admin.id, aksi: "BUAT_JURI", entitas: "juri", entitasId: j.id, dataBaru: r.data });
+    await audit({ userId: admin.id, aksi: "BUAT_JURI", entitas: "juri", entitasId: j.id, dataBaru: { kodeJuri: r.data.kodeJuri, nama: r.data.nama } });
   } catch (e) {
-    if (isUnique(e, "username")) return fail(`Username "${r.data.username}" sudah dipakai.`);
+    if (isUnique(e, "username")) return fail(`Username/ID "${username}" sudah dipakai.`);
     if (isUnique(e, "kode_juri")) return fail(`ID Juri "${r.data.kodeJuri}" sudah dipakai.`);
     if (isUnique(e)) return fail("ID Juri atau username sudah dipakai.");
     throw e;
@@ -297,7 +301,7 @@ export async function createJuriAction(_p: ActionState, fd: FormData): Promise<A
   revalidatePath("/admin/juri");
   return {
     ok: true,
-    message: `Juri ${r.data.kodeJuri} dibuat. Username: ${r.data.username} · Password awal: ${password} (catat sekarang, tidak akan ditampilkan lagi; juri wajib menggantinya saat login pertama).`,
+    message: `Juri ${r.data.kodeJuri} (${r.data.nama}) berhasil didaftarkan. Juri dapat langsung login memilih namanya tanpa password.`,
   };
 }
 

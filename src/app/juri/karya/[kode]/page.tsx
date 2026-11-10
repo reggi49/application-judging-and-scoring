@@ -52,3 +52,4 @@ export default async function JuriNilaiPage({ params }: { params: Promise<{ kode
     </main>
   );
 }
+

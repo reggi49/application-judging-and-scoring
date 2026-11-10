@@ -165,3 +165,4 @@ export function JuriKaryaList({
     </div>
   );
 }
+

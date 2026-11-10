@@ -12,10 +12,10 @@ export default async function JuriLayout({ children }: { children: React.ReactNo
         roleLabel={`Juri · ${juri.kodeJuri}`}
         nav={[
           { href: "/juri", label: "Daftar Karya" },
-          { href: "/ganti-password", label: "Ganti Password" },
         ]}
       />
       {children}
     </div>
   );
 }
+

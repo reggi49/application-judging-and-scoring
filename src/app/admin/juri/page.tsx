@@ -36,3 +36,4 @@ export default async function AdminJuriPage() {
     </main>
   );
 }
+

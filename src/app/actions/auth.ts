@@ -35,18 +35,39 @@ function ipLimited(ip: string) {
 
 const GENERIC = "Username atau password salah.";
 
-export async function loginAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+/** Login Juri: tanpa password. Cukup pilih ID / nama juri. */
+export async function loginJuriAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const juriId = Number(fd.get("juriId"));
+  if (!juriId || !Number.isInteger(juriId)) return { error: "Pilih dewan juri terlebih dahulu." };
+
+  const juri = await db.juri.findFirst({
+    where: { id: juriId, deletedAt: null },
+    include: { user: true },
+  });
+
+  if (!juri || !juri.isActive || !juri.user.isActive) {
+    return { error: "Akun dewan juri tidak aktif atau tidak ditemukan." };
+  }
+
+  await createSession(juri.userId);
+  await audit({ userId: juri.userId, aksi: "LOGIN_JURI", entitas: "juri", entitasId: juri.id });
+
+  redirect("/juri");
+}
+
+/** Login Admin: tetap memakai username dan password Argon2id. */
+export async function loginAdminAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const username = String(fd.get("username") ?? "").trim().toLowerCase();
   const password = String(fd.get("password") ?? "");
-  if (!username || !password) return { error: "Isi username dan password." };
+  if (!username || !password) return { error: "Isi username dan password admin." };
   if (username.length > 50 || password.length > 128) return { error: GENERIC };
 
   const h = await headers();
   const ip = (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "local").trim();
   if (ipLimited(ip)) return { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." };
 
-  const user = await db.user.findUnique({ where: { username }, include: { juri: true } });
-  if (!user) {
+  const user = await db.user.findUnique({ where: { username } });
+  if (!user || user.role !== "ADMIN") {
     await verifyPassword(await getDummyHash(), password).catch(() => false);
     return { error: GENERIC };
   }
@@ -64,18 +85,17 @@ export async function loginAction(_prev: ActionState, fd: FormData): Promise<Act
         ? { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCK_MS) }
         : { failedLogins: failed },
     });
-    await audit({ userId: user.id, aksi: "LOGIN_GAGAL", entitas: "user", entitasId: user.id });
+    await audit({ userId: user.id, aksi: "LOGIN_ADMIN_GAGAL", entitas: "user", entitasId: user.id });
     return { error: GENERIC };
   }
-  const aktif = user.isActive && (user.role === "ADMIN" || (user.juri && user.juri.isActive && !user.juri.deletedAt));
-  if (!aktif) return { error: "Akun tidak aktif. Hubungi panitia." };
+  if (!user.isActive) return { error: "Akun admin tidak aktif." };
 
   await db.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null } });
   await createSession(user.id);
-  await audit({ userId: user.id, aksi: "LOGIN", entitas: "user", entitasId: user.id });
+  await audit({ userId: user.id, aksi: "LOGIN_ADMIN", entitas: "user", entitasId: user.id });
 
   if (user.mustChangePassword) redirect("/ganti-password");
-  redirect(user.role === "ADMIN" ? "/admin" : "/juri");
+  redirect("/admin");
 }
 
 export async function logoutAction() {
@@ -87,7 +107,7 @@ export async function logoutAction() {
 
 export async function changePasswordAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const u = await getSessionUser();
-  if (!u) redirect("/login");
+  if (!u || u.role !== "ADMIN") redirect("/login");
   const current = String(fd.get("current") ?? "");
   const next = String(fd.get("next") ?? "");
   const confirm = String(fd.get("confirm") ?? "");
@@ -107,6 +127,5 @@ export async function changePasswordAction(_prev: ActionState, fd: FormData): Pr
   });
   await destroyOtherSessions(u.id, await currentToken());
   await audit({ userId: u.id, aksi: "GANTI_PASSWORD", entitas: "user", entitasId: u.id });
-  redirect(u.role === "ADMIN" ? "/admin" : "/juri");
+  redirect("/admin");
 }
-

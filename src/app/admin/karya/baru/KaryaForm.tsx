@@ -126,3 +126,4 @@ export function KaryaForm({ pesertaList }: { pesertaList: PesertaOption[] }) {
     </form>
   );
 }
+

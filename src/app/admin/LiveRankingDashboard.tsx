@@ -266,3 +266,4 @@ function RankingTable({
     </table>
   );
 }
+

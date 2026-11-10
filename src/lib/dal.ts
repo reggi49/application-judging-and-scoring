@@ -7,7 +7,7 @@ export async function requireUser(role?: "ADMIN" | "JURI", opts?: { allowMustCha
   const u = await getSessionUser();
   if (!u) redirect("/login");
   if (role && u.role !== role) redirect(u.role === "ADMIN" ? "/admin" : "/juri");
-  if (u.mustChangePassword && !opts?.allowMustChange) redirect("/ganti-password");
+  if (u.role === "ADMIN" && u.mustChangePassword && !opts?.allowMustChange) redirect("/ganti-password");
   return u;
 }
 
@@ -17,7 +17,8 @@ export const requireJuri = () => requireUser("JURI");
 /** Untuk route handler (API): kembalikan user atau null (jawab 401/403 sendiri). */
 export async function apiUser(role: "ADMIN" | "JURI"): Promise<SessionUser | null> {
   const u = await getSessionUser();
-  if (!u || u.role !== role || u.mustChangePassword) return null;
+  if (!u || u.role !== role) return null;
+  if (u.role === "ADMIN" && u.mustChangePassword) return null;
   return u;
 }
 

@@ -65,9 +65,10 @@ Langkah 2 (semua juri): TOTAL        = Σ Skor Juri_j            (jumlah nilai s
 ## 5. Fitur
 
 ### 5.1 Autentikasi
-- Login terpisah Admin/Juri. Password hash (argon2/bcrypt), rate-limit, session aman, HTTPS wajib.
-- Akun juri dibuat admin; wajib ganti password saat login pertama; reset oleh admin.
-- Satu juri = satu akun. Sesi aktif ditampilkan ke admin (opsional).
+- Pilihan peran di halaman muka (`/login`): Tab **Dewan Juri** (default) dan Tab **Administrator**.
+- **Dewan Juri**: Tanpa password. Juri cukup memilih profil namanya/ID juri di smartphone untuk langsung masuk menilai (minim friksi saat acara berlangsung).
+- **Administrator**: Tetap menggunakan username dan password yang di-hash dengan Argon2id, rate-limited, dan sesi aman.
+- Session berbasis cookie HTTP-only (`rwsa_session`).
 
 ### 5.2 Peserta (Admin)
 - Field: **ID Peserta (akronim)**, **Nama**, **Deskripsi**.
@@ -75,8 +76,8 @@ Langkah 2 (semua juri): TOTAL        = Σ Skor Juri_j            (jumlah nilai s
 - CRUD, pencarian, export CSV.
 
 ### 5.3 Juri (Admin)
-- Field: **ID Juri**, **Nama**, username, password, status aktif.
-- CRUD, aktif/nonaktif, reset password.
+- Field: **ID Juri**, **Nama Juri**, status aktif.
+- CRUD, aktif/nonaktif. Login tanpa password.
 
 ### 5.4 Karya (Admin) — "Form Submit Karya"
 - Satu peserta → banyak karya.
