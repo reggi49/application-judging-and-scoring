@@ -174,17 +174,105 @@ export default async function BeritaAcaraPage() {
 
         {/* TABEL PERINGKAT LENGKAP */}
         <div className="mt-8">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <h2 className="font-title text-base sm:text-lg font-bold text-gold-light print:text-black">
-              Rekapitulasi Peringkat Resmi Peserta
-            </h2>
-            <span className="sm:hidden text-[11px] text-[#ded7c8] font-semibold">
-              Geser ke kanan ➔
-            </span>
+          <h2 className="font-title text-base sm:text-lg font-bold text-gold-light print:text-black mb-3">
+            Rekapitulasi Peringkat Resmi Peserta ({data.resmi.length} Karya)
+          </h2>
+
+          {/* 1. TAMPILAN MOBILE SMARTPHONE (< 640px): TABEL 100% BEBAS SCROLL (NO HORIZONTAL SCROLL) */}
+          <div className="sm:hidden space-y-2.5 print:hidden">
+            {data.resmi.map((r) => {
+              const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
+              const isJuara1 = r.peringkat === 1;
+              const isJuara2 = r.peringkat === 2;
+              const isJuara3 = r.peringkat === 3;
+
+              return (
+                <div
+                  key={r.karyaId}
+                  className={`rounded-xl border p-3 transition-all ${
+                    isJuara1
+                      ? "border-gold bg-gradient-to-r from-gold/15 to-panel"
+                      : isJuara2
+                        ? "border-slate-400/60 bg-gradient-to-r from-slate-400/10 to-panel"
+                        : isJuara3
+                          ? "border-amber-700/60 bg-gradient-to-r from-amber-700/10 to-panel"
+                          : "border-line bg-panel2/40"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    {/* Sisi Kiri: Peringkat & ID Karya */}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center justify-center min-w-8 h-8 px-1.5 rounded-lg font-title font-black text-xs ${
+                          isJuara1
+                            ? "bg-gold text-ink"
+                            : isJuara2
+                              ? "bg-slate-300 text-ink"
+                              : isJuara3
+                                ? "bg-amber-600 text-white"
+                                : "bg-panel2 border border-line text-white"
+                        }`}
+                      >
+                        {isJuara1 ? "🥇 1" : isJuara2 ? "🥈 2" : isJuara3 ? "🥉 3" : `#${r.peringkat}`}
+                      </span>
+
+                      <div>
+                        <span className="font-title text-base font-black text-gold-light tracking-wide block leading-none">
+                          {r.kodeKarya}
+                        </span>
+                        {r.seri && (
+                          <span className="text-[9px] font-black uppercase text-warn">SERI</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Sisi Kanan: Skor Rata-Rata Besar */}
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase text-[#ded7c8] block leading-none">
+                        Rata-Rata
+                      </span>
+                      <span className="font-title text-2xl font-black gold-text leading-tight">
+                        {r.rataText}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Baris Informasi Karya & Bengkel */}
+                  <div className="mt-2 pt-2 border-t border-line/60 flex flex-wrap items-baseline justify-between gap-1">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-white text-sm leading-tight line-clamp-1">
+                        {r.namaKarya}
+                      </h3>
+                      <p className="text-xs text-[#ded7c8] line-clamp-1 mt-0.5">
+                        {r.namaPeserta} <span className="text-gold-light font-semibold">({r.kodePeserta})</span>
+                      </p>
+                    </div>
+
+                    {/* Total Nilai */}
+                    <div className="text-right text-xs">
+                      <span className="text-[11px] text-[#ded7c8]">Total: </span>
+                      <strong className="text-white font-bold">{r.totalText}</strong>
+                    </div>
+                  </div>
+
+                  {/* Detail Nilai Tiap Juri (Ringkas & Terbaca) */}
+                  <div className="mt-2 pt-1.5 border-t border-line/40 flex items-center justify-between text-[11px] text-[#ded7c8]">
+                    <span className="font-semibold text-gold-light text-[10px]">Nilai Juri:</span>
+                    <div className="flex gap-2">
+                      {data.juri.map((j) => (
+                        <span key={j.id} className="font-mono">
+                          {j.kodeJuri}: <strong className="text-white">{perJuriMap.get(j.id) ?? "—"}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Container table-wrap: MENCEGAH TABLE MELEBARKAN VIEWPORT MOBILE */}
-          <div className="table-wrap overflow-x-auto rounded-xl border border-line bg-panel2/30 shadow-inner print:overflow-visible print:border-0 print:bg-transparent">
+          {/* 2. TAMPILAN DESKTOP (≥ 640px) & CETAK DOKUMEN FISIK (Print / PDF Resmi) */}
+          <div className="hidden sm:block print:block overflow-x-auto rounded-xl border border-line bg-panel2/30 shadow-inner print:overflow-visible print:border-0 print:bg-transparent">
             <table className="tbl print:text-xs w-full min-w-[620px] sm:min-w-full">
               <thead>
                 <tr>
