@@ -55,46 +55,34 @@ export async function loginJuriAction(_prev: ActionState, fd: FormData): Promise
   redirect("/juri");
 }
 
-/** Login Admin: tetap memakai username dan password Argon2id. */
+/** Login Admin: memakai username dan password sederhana, tanpa penguncian akun. */
 export async function loginAdminAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const username = String(fd.get("username") ?? "").trim().toLowerCase();
-  const password = String(fd.get("password") ?? "");
+  const password = String(fd.get("password") ?? "").trim();
   if (!username || !password) return { error: "Isi username dan password admin." };
-  if (username.length > 50 || password.length > 128) return { error: GENERIC };
-
-  const h = await headers();
-  const ip = (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "local").trim();
-  if (ipLimited(ip)) return { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." };
 
   const user = await db.user.findUnique({ where: { username } });
   if (!user || user.role !== "ADMIN") {
-    await verifyPassword(await getDummyHash(), password).catch(() => false);
-    return { error: GENERIC };
-  }
-  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
-    await verifyPassword(await getDummyHash(), password).catch(() => false);
-    return { error: "Akun dikunci sementara karena terlalu banyak percobaan. Coba lagi dalam beberapa menit." };
+    return { error: "Username atau password salah." };
   }
 
   const ok = await verifyPassword(user.passwordHash, password).catch(() => false);
   if (!ok) {
-    const failed = user.failedLogins + 1;
-    await db.user.update({
-      where: { id: user.id },
-      data: failed >= MAX_FAILED
-        ? { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCK_MS) }
-        : { failedLogins: failed },
-    });
     await audit({ userId: user.id, aksi: "LOGIN_ADMIN_GAGAL", entitas: "user", entitasId: user.id });
-    return { error: GENERIC };
+    return { error: "Password salah. Pastikan menggunakan password admin yang benar." };
   }
+
   if (!user.isActive) return { error: "Akun admin tidak aktif." };
 
-  await db.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null } });
+  // Pastikan akun bersih dari kuncian
+  await db.user.update({
+    where: { id: user.id },
+    data: { failedLogins: 0, lockedUntil: null, mustChangePassword: false },
+  });
+
   await createSession(user.id);
   await audit({ userId: user.id, aksi: "LOGIN_ADMIN", entitas: "user", entitasId: user.id });
 
-  if (user.mustChangePassword) redirect("/ganti-password");
   redirect("/admin");
 }
 

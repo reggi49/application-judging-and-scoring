@@ -18,15 +18,15 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
 
   return (
     <div>
-      {/* Pilihan Login Sebagai Apa */}
-      <div className="mb-6 flex rounded-lg border border-line bg-panel2 p-1">
+      {/* Pilihan Login Sebagai Apa — Jelas & Kontras Tinggi */}
+      <div className="mb-6 flex rounded-xl border-2 border-line bg-panel2 p-1.5 shadow-md">
         <button
           type="button"
           onClick={() => setTab("JURI")}
-          className={`flex-1 rounded-md py-2 text-center text-sm font-semibold transition-all ${
+          className={`flex-1 rounded-lg py-3 text-center text-base font-bold transition-all ${
             tab === "JURI"
-              ? "bg-gold text-ink shadow"
-              : "text-muted hover:text-cream"
+              ? "bg-gold text-ink shadow-md"
+              : "text-[#ded7c8] hover:bg-panel hover:text-white"
           }`}
         >
           🎖️ Dewan Juri
@@ -34,10 +34,10 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
         <button
           type="button"
           onClick={() => setTab("ADMIN")}
-          className={`flex-1 rounded-md py-2 text-center text-sm font-semibold transition-all ${
+          className={`flex-1 rounded-lg py-3 text-center text-base font-bold transition-all ${
             tab === "ADMIN"
-              ? "bg-gold text-ink shadow"
-              : "text-muted hover:text-cream"
+              ? "bg-gold text-ink shadow-md"
+              : "text-[#ded7c8] hover:bg-panel hover:text-white"
           }`}
         >
           ⚙️ Administrator
@@ -47,38 +47,25 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
       {/* FORM LOGIN JURI (TANPA PASSWORD) */}
       {tab === "JURI" && (
         <form action={juriFormAction} className="space-y-4">
-          <div className="rounded-lg border border-gold-dark/40 bg-gold/5 p-3 text-center">
-            <p className="text-xs font-medium text-gold-light">
-              Khusus dewan juri: Langsung masuk tanpa password.
+          <div className="rounded-xl border-2 border-gold-dark/60 bg-gold/15 p-3.5 text-center shadow-sm">
+            <p className="text-sm font-bold text-white">
+              Khusus Dewan Juri: Langsung pilih profil di bawah tanpa password.
             </p>
           </div>
 
           <div>
-            <label htmlFor="juriId" className="label">
-              Pilih Profil Dewan Juri
+            <label htmlFor="juriId" className="label text-base">
+              Pilih Profil Anda:
             </label>
             {juriList.length === 0 ? (
-              <p className="rounded-md border border-warn/40 bg-warn/10 p-3 text-center text-xs text-warn">
+              <p className="rounded-xl border-2 border-warn/60 bg-warn/15 p-4 text-center text-sm font-bold text-warn">
                 Belum ada dewan juri aktif. Silakan hubungi admin panitia.
               </p>
             ) : (
-              <div className="space-y-2">
-                <select
-                  id="juriId"
-                  name="juriId"
-                  className="input text-base font-medium"
-                  value={selectedJuriId}
-                  onChange={(e) => setSelectedJuriId(Number(e.target.value))}
-                  required
-                >
-                  {juriList.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.kodeJuri} — {j.nama}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-3">
+                <input type="hidden" name="juriId" value={selectedJuriId} />
 
-                <div className="grid gap-2 pt-1">
+                <div className="grid gap-2.5 pt-1">
                   {juriList.map((j) => {
                     const isSelected = j.id === selectedJuriId;
                     return (
@@ -86,18 +73,24 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
                         key={j.id}
                         type="button"
                         onClick={() => setSelectedJuriId(j.id)}
-                        className={`flex items-center justify-between rounded-lg border p-3 text-left transition-all ${
+                        className={`flex items-center justify-between rounded-xl border-2 p-4 text-left transition-all ${
                           isSelected
-                            ? "border-gold bg-gold/15 text-gold-light shadow-sm"
-                            : "border-line bg-panel hover:border-gold-dark/50"
+                            ? "border-gold bg-gold/25 text-white shadow-md ring-2 ring-gold/40"
+                            : "border-line bg-panel hover:border-gold hover:bg-panel2 text-white"
                         }`}
                       >
                         <div>
-                          <div className="font-semibold text-cream">{j.nama}</div>
-                          <div className="text-xs text-muted">ID: {j.kodeJuri}</div>
+                          <div className="text-lg font-bold text-white">{j.nama}</div>
+                          <div className="text-sm font-semibold text-gold-light mt-0.5">Kode Juri: {j.kodeJuri}</div>
                         </div>
-                        <span className={`text-xs ${isSelected ? "text-gold font-bold" : "text-muted"}`}>
-                          {isSelected ? "● Terpilih" : "Pilih"}
+                        <span
+                          className={`rounded-full px-3.5 py-1.5 text-xs font-bold ${
+                            isSelected
+                              ? "bg-gold text-ink shadow-sm"
+                              : "bg-[#38332a] text-[#ded7c8]"
+                          }`}
+                        >
+                          {isSelected ? "✓ Terpilih" : "Pilih"}
                         </span>
                       </button>
                     );
@@ -110,7 +103,7 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
           <FormMessage state={juriState} />
 
           <SubmitButton
-            className="btn btn-gold w-full text-base"
+            className="btn btn-gold w-full text-lg py-3.5 mt-2"
             disabled={juriList.length === 0}
             pending="Masuk…"
           >
@@ -123,13 +116,13 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
       {tab === "ADMIN" && (
         <form action={adminFormAction} className="space-y-4" noValidate>
           <div>
-            <label htmlFor="username" className="label">
+            <label htmlFor="username" className="label text-sm">
               Username Admin
             </label>
             <input
               id="username"
               name="username"
-              className="input"
+              className="input text-base"
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"
@@ -140,23 +133,24 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
           </div>
 
           <div>
-            <label htmlFor="password" className="label">
+            <label htmlFor="password" className="label text-sm">
               Password
             </label>
             <input
               id="password"
               name="password"
               type="password"
-              className="input"
+              className="input text-base"
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder="MBtech123"
               required
             />
+            <p className="mt-1.5 text-xs font-medium text-gold-light">Password: MBtech123</p>
           </div>
 
           <FormMessage state={adminState} />
 
-          <SubmitButton className="btn btn-gold w-full" pending="Memverifikasi…">
+          <SubmitButton className="btn btn-gold w-full text-base py-3 mt-2" pending="Memverifikasi…">
             Masuk sebagai Administrator
           </SubmitButton>
         </form>

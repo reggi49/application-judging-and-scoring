@@ -25,9 +25,14 @@ export default async function KaryaIndexPage() {
         title="Daftar Karya"
         subtitle="Kelola karya modifikasi jok motor peserta RWSA 2026."
         actions={
-          <Link href="/admin/karya/baru" className="btn btn-gold btn-sm">
-            + Form Submit Karya
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/karya/label" className="btn btn-ghost btn-sm">
+              🏷️ Cetak Label Motor
+            </Link>
+            <Link href="/admin/karya/baru" className="btn btn-gold btn-sm">
+              + Form Submit Karya
+            </Link>
+          </div>
         }
       />
 
@@ -39,8 +44,8 @@ export default async function KaryaIndexPage() {
               <th>ID Karya</th>
               <th>Nama Karya</th>
               <th>Peserta</th>
-              <th className="num text-center">Foto</th>
-              <th className="num text-center">Juri Final</th>
+              <th className="num text-center">Foto (Maks 5)</th>
+              <th className="num text-center">Juri Selesai</th>
               <th className="text-right">Aksi</th>
             </tr>
           </thead>
@@ -79,11 +84,11 @@ export default async function KaryaIndexPage() {
                   </td>
                   <td className="num text-center">
                     <span className={`badge ${k._count.gambar > 0 ? "badge-gold" : "badge-warn"}`}>
-                      {k._count.gambar}/5
+                      {k._count.gambar}/5 foto
                     </span>
                   </td>
                   <td className="num text-center">
-                    <span className="badge">{k._count.penilaian}</span>
+                    <span className="badge font-bold">{k._count.penilaian} juri</span>
                   </td>
                   <td className="text-right">
                     <div className="flex justify-end gap-2">

@@ -100,7 +100,7 @@ Di halaman awal login, tersedia dua pilihan:
 1. **🎖️ Dewan Juri**: **Tanpa Password**. Juri cukup memilih profil namanya (J01 / J02 / J03) dari daftar atau layar sentuh smartphone untuk langsung masuk menilai.
 2. **⚙️ Administrator**: Memakai username dan password:
    - **Username**: `admin`
-   - **Password**: `Admin#RWSA2026` (Wajib ganti password pada login pertama)
+   - **Password**: `MBtech123`
 
 | Dewan Juri | ID Juri | Metode Masuk |
 |---|---|---|

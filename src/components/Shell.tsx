@@ -16,10 +16,10 @@ export function Emblem({ size = 44 }: { size?: number }) {
 export function Brand({ href = "/", compact = false }: { href?: string; compact?: boolean }) {
   return (
     <Link href={href} className="flex items-center gap-3">
-      <Emblem size={compact ? 38 : 48} />
+      <Emblem size={compact ? 40 : 48} />
       <span className="leading-tight">
-        <span className="font-title gold-text block text-base font-bold tracking-widest sm:text-lg">RIDING WITH STYLE</span>
-        <span className="block text-[0.68rem] tracking-[0.3em] text-muted">AWARDS 2026 · PENJURIAN</span>
+        <span className="font-title gold-text block text-base font-bold tracking-wider sm:text-lg">RIDING WITH STYLE</span>
+        <span className="block text-xs font-bold tracking-[0.22em] text-gold-light">AWARDS 2026 · PENJURIAN</span>
       </span>
     </Link>
   );
@@ -39,13 +39,13 @@ export function AppHeader({
   home: string;
 }) {
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
+    <header className="no-print sticky top-0 z-30 border-b-2 border-line bg-panel/95 backdrop-blur-md shadow-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Brand href={home} compact />
         <div className="flex items-center gap-3">
           <div className="hidden text-right leading-tight sm:block">
-            <div className="text-sm font-semibold text-cream">{userLabel}</div>
-            <div className="text-[0.68rem] uppercase tracking-widest text-muted">{roleLabel}</div>
+            <div className="text-base font-bold text-white">{userLabel}</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-gold-light">{roleLabel}</div>
           </div>
           <form action={logoutAction}>
             <button className="btn btn-ghost btn-sm" type="submit">
@@ -55,13 +55,13 @@ export function AppHeader({
         </div>
       </div>
       {nav.length > 0 && (
-        <nav aria-label="Navigasi utama" className="border-t border-line/60">
-          <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 py-1.5 [scrollbar-width:none]">
+        <nav aria-label="Navigasi utama" className="border-t border-line/80 bg-panel2/50">
+          <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none]">
             {nav.map((n) => (
               <li key={n.href} className="shrink-0">
                 <Link
                   href={n.href}
-                  className="inline-flex min-h-10 items-center rounded-md px-3 text-sm font-medium text-muted transition-colors hover:bg-gold/10 hover:text-gold-light"
+                  className="inline-flex min-h-10 items-center rounded-lg px-3.5 text-sm font-bold text-[#ded7c8] transition-colors hover:bg-gold/25 hover:text-white"
                 >
                   {n.label}
                 </Link>

@@ -422,28 +422,28 @@ export function PenilaianPanel(p: PanelProps) {
       <div className="grid gap-5 md:grid-cols-2 md:items-start lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         {/* Kolom kiri: identitas + galeri */}
         <section aria-labelledby="judul-karya">
-          <div className="card mb-4 p-4">
-            <p className="text-[0.7rem] uppercase tracking-[0.25em] text-muted">ID Karya</p>
-            <h1 id="judul-karya" className="font-title gold-text num text-3xl font-bold leading-tight sm:text-4xl">
+          <div className="card mb-4 p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-gold-light">ID Penilaian Motor</p>
+            <h1 id="judul-karya" className="font-title gold-text num text-4xl font-black leading-tight sm:text-5xl tracking-wider mt-1">
               {karya.kode}
             </h1>
-            <p className="mt-2 text-lg font-semibold text-cream">{karya.nama}</p>
-            <p className="text-sm text-muted">
-              {karya.peserta} <span className="text-gold-dark">· {karya.kodePeserta}</span>
+            <p className="mt-2 text-xl font-bold text-white">{karya.nama}</p>
+            <p className="text-base font-semibold text-[#ded7c8]">
+              {karya.peserta} <span className="text-gold-light">· {karya.kodePeserta}</span>
             </p>
-            {karya.deskripsi && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{karya.deskripsi}</p>}
+            {karya.deskripsi && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[#ded7c8] bg-panel2/50 p-3 rounded-lg border border-line">{karya.deskripsi}</p>}
           </div>
           <Gallery fotos={karya.fotos} alt={karya.nama} />
         </section>
 
         {/* Kolom kanan: form nilai */}
         <section aria-label="Form penilaian" className="md:sticky md:top-28">
-          <div className="card p-4">
-            <div className="mb-1 flex items-baseline justify-between">
-              <h2 className="font-title text-lg font-bold text-gold-light">Penilaian</h2>
-              <span className="text-xs text-muted">Skala 0–100</span>
+          <div className="card p-5">
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="font-title text-xl font-bold text-gold-light">Lembar Penilaian</h2>
+              <span className="text-sm font-semibold text-[#ded7c8]">Skala Nilai 0–100</span>
             </div>
-            <hr className="hairline mb-3" />
+            <hr className="hairline mb-4" />
 
             <ul className="space-y-4">
               {kriteria.map((k) => {
@@ -451,18 +451,18 @@ export function PenilaianPanel(p: PanelProps) {
                 const n = raw === "" ? null : Number(raw);
                 const poin = n === null ? null : formatScaled(n * k.bobotBp, SCALE, 2);
                 return (
-                  <li key={k.id}>
+                  <li key={k.id} className="rounded-xl border border-line bg-panel2/70 p-3.5 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <label htmlFor={`n-${k.kode}`} className="min-w-0 flex-1">
-                        <span className="block font-semibold text-cream">{k.nama}</span>
-                        {k.deskripsi && <span className="mt-0.5 block text-xs leading-snug text-muted">{k.deskripsi}</span>}
+                        <span className="block text-base font-bold text-white">{k.nama}</span>
+                        {k.deskripsi && <span className="mt-1 block text-xs leading-snug text-[#ded7c8]">{k.deskripsi}</span>}
                       </label>
-                      <span className="badge badge-gold shrink-0">Bobot {k.bobotBp / 100}%</span>
+                      <span className="badge badge-gold shrink-0 text-xs">Bobot {k.bobotBp / 100}%</span>
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-3 flex items-center gap-2">
                       <button
                         type="button"
-                        className="btn btn-ghost w-12 shrink-0 text-xl"
+                        className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
                         onClick={() => step(k.kode, -1)}
                         disabled={!canEdit}
                         aria-label={`Kurangi nilai ${k.nama}`}
@@ -474,7 +474,7 @@ export function PenilaianPanel(p: PanelProps) {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         autoComplete="off"
-                        className="input num text-center text-2xl font-semibold"
+                        className="input num text-center text-3xl font-extrabold h-14 bg-[#1f1d18] border-2 border-gold-dark/80 text-white shadow-inner"
                         placeholder="0–100"
                         value={raw}
                         readOnly={!canEdit}
@@ -484,7 +484,7 @@ export function PenilaianPanel(p: PanelProps) {
                       />
                       <button
                         type="button"
-                        className="btn btn-ghost w-12 shrink-0 text-xl"
+                        className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
                         onClick={() => step(k.kode, 1)}
                         disabled={!canEdit}
                         aria-label={`Tambah nilai ${k.nama}`}
@@ -492,8 +492,8 @@ export function PenilaianPanel(p: PanelProps) {
                         +
                       </button>
                     </div>
-                    <p id={`poin-${k.kode}`} className="num mt-1 text-right text-xs text-muted">
-                      {poin === null ? "belum diisi" : `${n} × ${k.bobotBp / 100}% = ${poin} poin`}
+                    <p id={`poin-${k.kode}`} className="num mt-2 text-right text-xs font-bold text-gold-light">
+                      {poin === null ? "— belum diisi" : `${n} × ${k.bobotBp / 100}% = ${poin} poin`}
                     </p>
                   </li>
                 );
@@ -501,57 +501,59 @@ export function PenilaianPanel(p: PanelProps) {
             </ul>
 
             {hint && (
-              <p role="alert" className="mt-2 text-sm text-warn">
+              <p role="alert" className="mt-3 text-sm font-bold text-warn">
                 {hint}
               </p>
             )}
 
-            <div className="mt-4">
+            <div className="mt-5">
               <label htmlFor="catatan" className="label">
-                Catatan (opsional)
+                Catatan Juri (opsional)
               </label>
               <textarea
                 id="catatan"
                 rows={3}
                 maxLength={2000}
-                className="input"
+                className="input font-medium"
                 value={catatan}
                 readOnly={!canEdit}
                 onChange={(e) => onCatatan(e.target.value)}
-                placeholder="Catatan untuk dewan juri"
+                placeholder="Tuliskan catatan atau masukan untuk karya ini…"
               />
             </div>
 
-            <div className="mt-4 flex items-end justify-between rounded-lg border border-gold-dark/60 bg-gold/5 px-4 py-3">
+            <div className="mt-5 flex items-center justify-between rounded-xl border-2 border-gold bg-gold/15 px-4 py-3.5 shadow-md">
               <div>
-                <p className="text-[0.7rem] uppercase tracking-[0.2em] text-muted">Skor Anda</p>
-                <p className="text-xs text-muted">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">Skor Akhir Anda</p>
+                <p className="text-xs font-semibold text-white mt-0.5">
                   {live.filled}/{kriteria.length} kriteria terisi
                 </p>
               </div>
-              <p className="num gold-text font-title text-4xl font-bold">{displayTotal ?? "—"}</p>
+              <p className="num gold-text font-title text-4xl sm:text-5xl font-black">{displayTotal ?? "—"}</p>
             </div>
           </div>
         </section>
       </div>
 
       {/* Bilah aksi (menempel di bawah untuk smartphone) */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:static md:mt-5 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t-2 border-line bg-panel/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md shadow-2xl md:static md:mt-5 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
         <div className="mx-auto flex max-w-7xl items-center gap-3 md:justify-end">
           <div className="min-w-0 flex-1 md:hidden">
-            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted">Skor</p>
-            <p className="num gold-text font-title text-2xl font-bold leading-none">{displayTotal ?? "—"}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">Skor Anda</p>
+            <p className="num gold-text font-title text-3xl font-black leading-none">{displayTotal ?? "—"}</p>
           </div>
           {status === "FINAL" ? (
-            <p className="text-sm font-semibold text-ok">✓ Nilai final terkunci. Hubungi admin untuk membuka.</p>
+            <p className="text-sm font-bold text-ok bg-ok/15 border border-ok/50 px-4 py-2.5 rounded-lg">
+              ✓ Nilai final terkunci. Hubungi admin untuk membuka.
+            </p>
           ) : (
             <button
               type="button"
-              className="btn btn-gold min-w-44 flex-[2] md:flex-none"
+              className="btn btn-gold min-w-44 flex-[2] md:flex-none text-lg py-3.5 font-bold shadow-lg"
               disabled={!canEdit || !live.lengkap || !ready}
               onClick={openConfirm}
             >
-              Submit Final
+              Submit Nilai Final ➔
             </button>
           )}
         </div>

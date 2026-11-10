@@ -58,37 +58,37 @@ export function JuriKaryaList({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h1 className="font-title gold-text text-2xl font-bold sm:text-3xl">Daftar Karya</h1>
-          <p className="text-sm text-muted">
-            Juri: <span className="font-medium text-cream">{juriNama}</span> ({juriKode})
+          <h1 className="font-title gold-text text-3xl font-extrabold sm:text-4xl">Daftar Karya Motor</h1>
+          <p className="mt-1 text-sm font-semibold text-[#ded7c8]">
+            Dewan Juri: <span className="font-bold text-white text-base">{juriNama}</span> ({juriKode})
           </p>
         </div>
         <div className="text-right">
-          <p className="num font-title gold-text text-2xl font-bold">
+          <p className="num font-title gold-text text-3xl font-black">
             {counts.FINAL}/{counts.total}
           </p>
-          <p className="text-xs text-muted">karya final ({pct}%)</p>
+          <p className="text-xs font-bold text-gold-light uppercase tracking-wider">Karya Final ({pct}%)</p>
         </div>
       </div>
 
-      {/* Bar progres */}
-      <div className="mb-5 h-2 w-full overflow-hidden rounded-full bg-panel2">
-        <div className="h-full bg-gradient-to-r from-gold-dark via-gold to-gold-light transition-all" style={{ width: `${pct}%` }} />
+      {/* Bar progres — cerah & kontras */}
+      <div className="mb-6 h-3 w-full overflow-hidden rounded-full bg-panel2 border border-line">
+        <div className="h-full bg-gradient-to-r from-gold via-gold-light to-white transition-all shadow-md" style={{ width: `${pct}%` }} />
       </div>
 
       {fase !== "PENJURIAN" && (
-        <p className="mb-4 rounded-md border border-warn/50 bg-warn/10 px-3 py-2 text-sm text-warn">
+        <p className="mb-4 rounded-xl border-2 border-warn/60 bg-warn/15 px-4 py-3 text-sm font-bold text-warn">
           {fase === "PERSIAPAN" ? "Penjurian belum dibuka oleh panitia." : "Penjurian telah selesai."}
         </p>
       )}
 
       {/* Pencarian & Filter */}
-      <div className="mb-4 space-y-2">
+      <div className="mb-5 space-y-3">
         <input
-          className="input"
-          placeholder="Cari ID karya / nama / peserta…"
+          className="input text-base font-medium py-3"
+          placeholder="🔍 Cari ID karya / nama / bengkel peserta…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -96,7 +96,7 @@ export function JuriKaryaList({
           {(
             [
               ["ALL", `Semua (${counts.total})`],
-              ["BELUM", `Belum (${counts.BELUM})`],
+              ["BELUM", `Belum Dinilai (${counts.BELUM})`],
               ["DRAFT", `Draft (${counts.DRAFT})`],
               ["FINAL", `Final (${counts.FINAL})`],
             ] as const
@@ -105,7 +105,7 @@ export function JuriKaryaList({
               key={k}
               type="button"
               onClick={() => setFilter(k)}
-              className={`btn btn-sm shrink-0 ${filter === k ? "btn-gold" : "btn-ghost"}`}
+              className={`btn btn-sm shrink-0 font-bold ${filter === k ? "btn-gold shadow-md" : "btn-ghost"}`}
             >
               {label}
             </button>
@@ -115,19 +115,21 @@ export function JuriKaryaList({
 
       {/* Daftar karya */}
       {filtered.length === 0 ? (
-        <div className="card p-8 text-center text-muted">Tidak ada karya yang cocok.</div>
+        <div className="card p-10 text-center text-base font-semibold text-[#ded7c8]">
+          Tidak ada karya yang cocok dengan pencarian.
+        </div>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((it) => {
             const b = STATUS_BADGE[it.status];
             return (
               <li key={it.id}>
                 <Link
                   href={`/juri/karya/${it.kode}`}
-                  className="card block p-3 transition-colors hover:border-gold-dark hover:bg-gold/5"
+                  className="card block p-4 transition-all hover:border-gold hover:shadow-xl hover:translate-y-[-2px]"
                 >
-                  <div className="flex gap-3">
-                    <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-md bg-panel">
+                  <div className="flex gap-3.5">
+                    <div className="relative aspect-[4/3] w-32 shrink-0 overflow-hidden rounded-lg bg-panel2 border border-line">
                       {it.coverId ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -137,22 +139,26 @@ export function JuriKaryaList({
                           loading="lazy"
                         />
                       ) : (
-                        <div className="grid h-full place-items-center text-xs text-muted">tanpa foto</div>
+                        <div className="grid h-full place-items-center text-xs font-semibold text-[#ded7c8]">tanpa foto</div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-1">
-                        <span className="num font-title text-base font-bold text-gold-light">{it.kode}</span>
-                        <span className={`badge ${b.cls}`}>{b.text}</span>
+                    <div className="min-w-0 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="num font-title text-lg font-black text-gold-light tracking-wide">{it.kode}</span>
+                          <span className={`badge ${b.cls}`}>{b.text}</span>
+                        </div>
+                        <p className="mt-1 text-base font-bold text-white line-clamp-1">{it.nama}</p>
+                        <p className="text-xs font-semibold text-[#ded7c8] line-clamp-1 mt-0.5">
+                          {it.peserta} <span className="text-gold-light font-bold">({it.kodePeserta})</span>
+                        </p>
                       </div>
-                      <p className="mt-1 truncate font-semibold text-cream">{it.nama}</p>
-                      <p className="truncate text-xs text-muted">
-                        {it.peserta} <span className="text-gold-dark">({it.kodePeserta})</span>
-                      </p>
-                      {it.skor && (
-                        <p className="num gold-text mt-2 text-right font-title text-xl font-bold">
+                      {it.skor ? (
+                        <p className="num gold-text mt-2 text-right font-title text-2xl font-black">
                           {it.skor}
                         </p>
+                      ) : (
+                        <p className="text-right text-xs font-bold text-gold-light mt-2">Buka Nilai ➔</p>
                       )}
                     </div>
                   </div>

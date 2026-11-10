@@ -123,10 +123,13 @@ export function LiveRankingDashboard({
                   <span className="text-xs text-muted">{p.kodeJuri}</span>
                 </div>
                 <div className="num mt-2 flex items-baseline justify-between">
-                  <span className="gold-text font-title text-2xl font-bold">
-                    {p.final}/{p.total}
-                  </span>
-                  <span className="text-xs text-muted">{pct}% final</span>
+                  <div>
+                    <span className="gold-text font-title text-2xl font-bold">
+                      {p.final}/{p.total}
+                    </span>
+                    <span className="ml-1.5 text-xs font-semibold text-[#ded7c8]">karya</span>
+                  </div>
+                  <span className="text-xs font-bold text-gold-light">{pct}% selesai</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-panel2">
                   <div className="h-full bg-gold" style={{ width: `${pct}%` }} />
@@ -215,7 +218,7 @@ function RankingTable({
     <table className="tbl">
       <thead>
         <tr>
-          {showRank && <th className="w-12 text-center">Rank</th>}
+          {showRank && <th className="w-16 text-center">Rank</th>}
           <th>ID Karya</th>
           <th>Karya / Peserta</th>
           <th className="num text-center">Juri Final</th>
@@ -231,20 +234,27 @@ function RankingTable({
       <tbody>
         {rows.map((r) => {
           const perJuriMap = new Map(r.perJuri.map((p) => [p.juriId, p.skorText]));
-          const juara = r.peringkat && r.peringkat <= 3;
+          const rankCls =
+            r.peringkat === 1
+              ? "bg-gold/15 border-l-4 border-l-gold"
+              : r.peringkat === 2
+                ? "bg-slate-300/10 border-l-4 border-l-slate-300"
+                : r.peringkat === 3
+                  ? "bg-amber-600/15 border-l-4 border-l-amber-600"
+                  : undefined;
           return (
-            <tr key={r.karyaId} className={juara ? "bg-gold/5" : undefined}>
+            <tr key={r.karyaId} className={rankCls}>
               {showRank && (
-                <td className="num text-center font-title text-lg font-bold">
+                <td className="num text-center font-title text-xl font-black">
                   {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
-                  {r.seri && <span className="block text-[0.65rem] text-warn">SERI</span>}
+                  {r.seri && <span className="block text-xs font-bold text-warn">SERI</span>}
                 </td>
               )}
-              <td className="num font-semibold text-gold-light">{r.kodeKarya}</td>
+              <td className="num text-base font-black text-gold-light tracking-wide">{r.kodeKarya}</td>
               <td>
-                <div className="font-semibold text-cream">{r.namaKarya}</div>
-                <div className="text-xs text-muted">
-                  {r.namaPeserta} <span className="text-gold-dark">({r.kodePeserta})</span>
+                <div className="text-base font-bold text-white">{r.namaKarya}</div>
+                <div className="text-sm font-semibold text-[#ded7c8]">
+                  {r.namaPeserta} <span className="text-gold-light font-bold">({r.kodePeserta})</span>
                 </div>
               </td>
               <td className="num text-center">
@@ -253,12 +263,12 @@ function RankingTable({
                 </span>
               </td>
               {juri.map((j) => (
-                <td key={j.id} className="num text-right text-muted">
+                <td key={j.id} className="num text-right text-base font-semibold text-[#ded7c8]">
                   {perJuriMap.get(j.id) ?? "—"}
                 </td>
               ))}
-              <td className="num text-right font-semibold">{r.totalText}</td>
-              <td className="num gold-text font-title text-right text-xl font-bold">{r.rataText}</td>
+              <td className="num text-right text-lg font-bold text-white">{r.totalText}</td>
+              <td className="num gold-text font-title text-right text-2xl font-black">{r.rataText}</td>
             </tr>
           );
         })}
