@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DeleteButton } from "@/components/DeleteButton";
 import { deleteKaryaAction } from "../actions";
 
@@ -16,9 +16,12 @@ export type AdminKaryaItem = {
   penilaianCount: number;
 };
 
+const PAGE_SIZE = 20;
+
 export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"ALL" | "WITH_FOTO" | "NO_FOTO" | "JUDGED">("ALL");
+  const [page, setPage] = useState(1);
 
   const counts = useMemo(() => {
     let withFoto = 0;
@@ -48,14 +51,28 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
     });
   }, [items, q, filter]);
 
+  // Reset ke halaman 1 setiap kali query pencarian atau filter berubah
+  useEffect(() => {
+    setPage(1);
+  }, [q, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const goToPage = (p: number) => {
+    const validPage = Math.min(totalPages, Math.max(1, p));
+    setPage(validPage);
+  };
+
   return (
     <div className="space-y-4">
       {/* Kontrol Pencarian & Filter Cepat */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 max-w-md">
+        <div className="flex flex-1 items-center gap-2 max-w-md w-full">
           <input
             className="input text-base py-2.5"
-            placeholder="🔍 Cari dari 100 karya (ID / nama / bengkel)…"
+            placeholder="🔍 Cari ID / nama karya / bengkel…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -71,12 +88,12 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg border border-line bg-panel2 p-1">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap rounded-lg border border-line bg-panel2 p-1 w-full sm:w-auto justify-between sm:justify-start">
             <button
               type="button"
               onClick={() => setFilter("ALL")}
-              className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "ALL" ? "bg-gold text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
             >
@@ -85,25 +102,25 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
             <button
               type="button"
               onClick={() => setFilter("JUDGED")}
-              className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "JUDGED" ? "bg-ok text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
             >
-              Sudah Dinilai ({counts.judged})
+              Dinilai ({counts.judged})
             </button>
             <button
               type="button"
               onClick={() => setFilter("WITH_FOTO")}
-              className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "WITH_FOTO" ? "bg-gold-light text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
             >
-              Ada Foto ({counts.withFoto})
+              Foto ({counts.withFoto})
             </button>
             <button
               type="button"
               onClick={() => setFilter("NO_FOTO")}
-              className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "NO_FOTO" ? "bg-warn text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
             >
@@ -113,12 +130,24 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
         </div>
       </div>
 
-      <div className="text-xs font-semibold text-[#ded7c8]">
-        Menampilkan <strong>{filtered.length}</strong> dari total <strong>{items.length}</strong> karya
+      {/* Ringkasan & Info Pagination */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[#ded7c8]">
+        <div>
+          Menampilkan{" "}
+          <strong className="text-white">
+            {filtered.length === 0 ? 0 : startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, filtered.length)}
+          </strong>{" "}
+          dari total <strong className="text-white">{filtered.length}</strong> karya
+          {filtered.length !== items.length && ` (disaring dari ${items.length})`}
+        </div>
+
+        <div className="text-gold-light font-bold">
+          Halaman {page} dari {totalPages}
+        </div>
       </div>
 
-      {/* Tabel Karya */}
-      <div className="card table-wrap shadow-xl">
+      {/* TAMPILAN 1: DESKTOP & TABLET (Tabel Rapi Sejajar) */}
+      <div className="hidden sm:block card table-wrap shadow-xl">
         <table className="tbl">
           <thead>
             <tr>
@@ -126,20 +155,20 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
               <th className="w-36">ID Karya</th>
               <th>Nama Karya</th>
               <th>Peserta (Bengkel)</th>
-              <th className="w-28 num text-center">Foto (Maks 5)</th>
-              <th className="w-28 num text-center">Juri Selesai</th>
-              <th className="w-36 text-right">Aksi</th>
+              <th className="w-32 num text-center">Foto (Maks 5)</th>
+              <th className="w-32 num text-center">Juri Selesai</th>
+              <th className="w-32 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-10 text-center text-muted font-medium">
                   Tidak ada karya yang cocok dengan pencarian.
                 </td>
               </tr>
             ) : (
-              filtered.map((k) => (
+              paginated.map((k) => (
                 <tr key={k.id} className="hover:bg-gold/5 transition-colors">
                   <td>
                     <div className="relative aspect-[4/3] w-14 overflow-hidden rounded bg-panel2 border border-line">
@@ -198,7 +227,136 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
           </tbody>
         </table>
       </div>
+
+      {/* TAMPILAN 2: MOBILE SMARTPHONE (Kartu Eksekutif Khusus HP) */}
+      <div className="sm:hidden space-y-3">
+        {paginated.length === 0 ? (
+          <div className="card p-8 text-center text-muted font-medium">
+            Tidak ada karya yang cocok dengan pencarian.
+          </div>
+        ) : (
+          paginated.map((k) => (
+            <div
+              key={k.id}
+              className="card p-4 space-y-3 border-2 border-line hover:border-gold-dark/60 transition-all shadow-md"
+            >
+              {/* Baris Atas: Foto Thumbnail & Identitas Utama */}
+              <div className="flex items-start gap-3">
+                <div className="relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-lg bg-panel2 border border-line shadow-sm">
+                  {k.coverFotoId ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/api/foto/${k.coverFotoId}?t=1`}
+                      alt={k.namaKarya}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="grid h-full place-items-center text-[0.65rem] text-[#ded7c8]">
+                      N/A
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="num font-black text-base text-gold-light tracking-wide">
+                      {k.kodeKarya}
+                    </span>
+                    <span
+                      className={`badge text-[0.68rem] ${
+                        k.penilaianCount >= 3 ? "badge-ok" : k.penilaianCount > 0 ? "badge-warn" : ""
+                      }`}
+                    >
+                      {k.penilaianCount > 0 ? `${k.penilaianCount} juri` : "Belum dinilai"}
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-white text-base leading-tight mt-0.5 line-clamp-1">
+                    {k.namaKarya}
+                  </h3>
+
+                  <p className="text-xs text-[#ded7c8] mt-0.5 line-clamp-1">
+                    Bengkel: <strong className="text-white">{k.pesertaNama}</strong>{" "}
+                    <span className="text-gold-light">({k.pesertaKode})</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Baris Bawah: Info Foto & Tombol Aksi HP */}
+              <div className="flex items-center justify-between border-t border-line/60 pt-2.5">
+                <span className={`badge text-xs ${k.fotoCount > 0 ? "badge-gold" : "badge-warn"}`}>
+                  📷 {k.fotoCount}/5 foto
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/admin/karya/${k.id}`}
+                    className="btn btn-gold btn-sm text-xs font-bold px-3 py-1.5"
+                  >
+                    Kelola Karya ➔
+                  </Link>
+
+                  {k.penilaianCount === 0 && (
+                    <DeleteButton
+                      action={deleteKaryaAction}
+                      id={k.id}
+                      confirm={`Hapus karya ${k.kodeKarya}?`}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* KONTROL PAGINATION (20 PER HALAMAN) */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-center sm:justify-between gap-3 pt-2">
+          <div className="hidden sm:block text-xs text-[#ded7c8]">
+            Halaman <strong className="text-white">{page}</strong> dari <strong className="text-white">{totalPages}</strong> (20 karya per halaman)
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* Tombol Sebelumnya */}
+            <button
+              type="button"
+              onClick={() => goToPage(page - 1)}
+              disabled={page <= 1}
+              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+            >
+              ‹ Sebelumnya
+            </button>
+
+            {/* Tombol Nomor Halaman */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => goToPage(p)}
+                className={`min-w-8 h-8 rounded-md text-xs font-bold transition-all ${
+                  page === p
+                    ? "bg-gold text-ink shadow-md font-black"
+                    : "bg-panel2 border border-line text-[#ded7c8] hover:text-white hover:border-gold"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            {/* Tombol Berikutnya */}
+            <button
+              type="button"
+              onClick={() => goToPage(page + 1)}
+              disabled={page >= totalPages}
+              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+            >
+              Berikutnya ›
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

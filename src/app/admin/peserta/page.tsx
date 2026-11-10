@@ -2,8 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/dal";
 import { PageTitle } from "@/components/Shell";
-import { DeleteButton } from "@/components/DeleteButton";
-import { deletePesertaAction } from "../actions";
+import { AdminPesertaTable, type AdminPesertaItem } from "./AdminPesertaTable";
 
 export const metadata = { title: "Kelola Peserta" };
 
@@ -15,62 +14,28 @@ export default async function PesertaIndexPage() {
     orderBy: { kodePeserta: "asc" },
   });
 
+  const items: AdminPesertaItem[] = peserta.map((p) => ({
+    id: p.id,
+    kodePeserta: p.kodePeserta,
+    nama: p.nama,
+    deskripsi: p.deskripsi,
+    karyaCount: p._count.karya,
+    canDelete: p.karyaCounter === 0 && p._count.karya === 0,
+  }));
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-5">
       <PageTitle
         title="Daftar Peserta"
-        subtitle="Kelola peserta kompetisi. ID peserta adalah akronim unik."
+        subtitle={`Kelola seluruh ${items.length} bengkel/peserta kompetisi modifikasi jok RWSA 2026.`}
         actions={
-          <Link href="/admin/peserta/baru" className="btn btn-gold btn-sm">
+          <Link href="/admin/peserta/baru" className="btn btn-gold btn-sm font-bold">
             + Tambah Peserta
           </Link>
         }
       />
 
-      <div className="card table-wrap">
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>ID (Akronim)</th>
-              <th>Nama Peserta</th>
-              <th>Deskripsi</th>
-              <th className="num text-center">Jumlah Karya</th>
-              <th className="text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {peserta.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-8 text-center text-muted">
-                  Belum ada peserta. Tambah peserta pertama Anda.
-                </td>
-              </tr>
-            ) : (
-              peserta.map((p) => (
-                <tr key={p.id}>
-                  <td className="num font-semibold text-gold-light">{p.kodePeserta}</td>
-                  <td className="font-semibold text-cream">{p.nama}</td>
-                  <td className="max-w-xs truncate text-xs text-muted">{p.deskripsi || "—"}</td>
-                  <td className="num text-center">
-                    <span className="badge">{p._count.karya}</span>
-                  </td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link href={`/admin/peserta/${p.id}`} className="btn btn-ghost btn-sm">
-                        Edit
-                      </Link>
-                      {p.karyaCounter === 0 && (
-                        <DeleteButton action={deletePesertaAction} id={p.id} confirm={`Hapus peserta ${p.kodePeserta}?`} />
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <AdminPesertaTable items={items} />
     </main>
   );
 }
-
