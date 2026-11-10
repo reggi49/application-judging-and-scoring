@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/dal";
@@ -10,6 +11,11 @@ export const metadata = { title: "Cetak Kartu Label Motor Peserta" };
 export default async function CetakLabelKaryaPage() {
   await requireAdmin();
 
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "192.168.3.75:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const baseUrl = `${proto}://${host}`;
+
   const karya = await db.karya.findMany({
     where: { deletedAt: null, peserta: { deletedAt: null } },
     include: { peserta: true },
@@ -19,7 +25,8 @@ export default async function CetakLabelKaryaPage() {
   const qrMap = new Map<number, string>();
   for (const k of karya) {
     try {
-      const dataUrl = await QRCode.toDataURL(`/juri/karya/${k.kodeKarya}`, {
+      const targetUrl = `${baseUrl}/juri/karya/${k.kodeKarya}`;
+      const dataUrl = await QRCode.toDataURL(targetUrl, {
         width: 140,
         margin: 1,
         color: {

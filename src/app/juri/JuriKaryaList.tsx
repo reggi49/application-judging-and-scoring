@@ -40,13 +40,8 @@ export function JuriKaryaList({
 
   const handleScanSuccess = (kodeKarya: string) => {
     setScannerOpen(false);
-    const match = items.find((it) => it.kode.toUpperCase() === kodeKarya.toUpperCase());
-    if (match) {
-      router.push(`/juri/karya/${match.kode}`);
-    } else {
-      setQ(kodeKarya);
-      router.push(`/juri/karya/${kodeKarya}`);
-    }
+    // Langsung menuju ke detail dan lembar penilaian karya yang di-scan
+    window.location.href = `/juri/karya/${encodeURIComponent(kodeKarya)}`;
   };
 
   const counts = useMemo(() => {
