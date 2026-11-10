@@ -40,7 +40,7 @@ export default async function JuriHomePage() {
   });
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-5">
+    <main className="mx-auto max-w-7xl px-3 sm:px-4 py-3 sm:py-5">
       <JuriKaryaList items={items} fase={ev.fase} juriNama={juri.nama} juriKode={juri.kodeJuri} />
     </main>
   );
