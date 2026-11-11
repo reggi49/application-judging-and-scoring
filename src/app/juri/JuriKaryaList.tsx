@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { QrScannerModal } from "@/components/QrScannerModal";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
 type Item = {
   id: number;
@@ -81,6 +82,8 @@ export function JuriKaryaList({
 
   return (
     <div className="space-y-4 pb-20 sm:pb-6">
+      <PwaInstallPrompt />
+
       {/* 1. Executive Dashboard Juri — Optimal untuk Layar Mobile & Desktop */}
       <div className="relative overflow-hidden rounded-2xl border-2 border-gold/40 bg-gradient-to-br from-panel2 via-panel to-panel2 p-4 sm:p-5 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-3">

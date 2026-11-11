@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { Emblem } from "@/components/Shell";
 import { LoginForm } from "./LoginForm";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
 export const metadata = { title: "Masuk Penjurian" };
 
@@ -37,6 +38,7 @@ export default async function LoginPage() {
       </div>
       <div className="card p-5 sm:p-6">
         <LoginForm juriList={juriList} />
+        <PwaInstallPrompt />
       </div>
       <p className="mt-5 text-center text-xs text-muted">
         Keputusan dewan juri bersifat mutlak dan final.
