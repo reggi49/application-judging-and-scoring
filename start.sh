@@ -12,3 +12,4 @@ echo "  Menjalankan server pada: http://${HOSTNAME}:${PORT}"
 echo "=========================================================="
 
 exec node server.js
+

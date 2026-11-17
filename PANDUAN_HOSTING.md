@@ -142,3 +142,4 @@ Aplikasi ini sudah berstandar PWA (Progressive Web App):
   - Password: `MBtech123`
 - **Juri Login**:
   - Juri cukup memilih profilnya di halaman awal (tanpa password untuk kemudahan saat di lapangan).
+

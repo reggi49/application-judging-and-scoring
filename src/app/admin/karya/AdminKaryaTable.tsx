@@ -311,46 +311,51 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
         )}
       </div>
 
-      {/* KONTROL PAGINATION (20 PER HALAMAN) */}
+      {/* KONTROL PAGINATION COMPACT & MOBILE OPTIMIZED */}
       {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-center sm:justify-between gap-3 pt-2">
-          <div className="hidden sm:block text-xs text-[#ded7c8]">
-            Halaman <strong className="text-white">{page}</strong> dari <strong className="text-white">{totalPages}</strong> (20 karya per halaman)
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {/* Tombol Sebelumnya */}
+        <div className="pt-3 border-t border-line/70">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-panel2/90 p-2 sm:p-2.5 shadow-md">
             <button
               type="button"
               onClick={() => goToPage(page - 1)}
               disabled={page <= 1}
-              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+              className="btn btn-ghost btn-sm h-10 px-3 sm:px-4 font-bold text-xs sm:text-sm text-gold-light hover:bg-gold/20 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               ‹ Sebelumnya
             </button>
 
-            {/* Tombol Nomor Halaman */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => goToPage(p)}
-                className={`min-w-8 h-8 rounded-md text-xs font-bold transition-all ${
-                  page === p
-                    ? "bg-gold text-ink shadow-md font-black"
-                    : "bg-panel2 border border-line text-[#ded7c8] hover:text-white hover:border-gold"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs font-bold text-[#ded7c8] hidden xs:inline">
+                Hal:
+              </span>
+              <div className="relative">
+                <select
+                  value={page}
+                  onChange={(e) => goToPage(Number(e.target.value))}
+                  className="select select-sm h-10 bg-panel border-2 border-gold/50 text-gold-light font-black text-xs sm:text-sm pl-2.5 pr-7 rounded-xl appearance-none cursor-pointer focus:border-gold shadow-sm"
+                  aria-label="Pilih nomor halaman"
+                >
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                    const startSlot = (p - 1) * PAGE_SIZE + 1;
+                    const endSlot = Math.min(p * PAGE_SIZE, filtered.length);
+                    return (
+                      <option key={p} value={p}>
+                        Hal {p} dari {totalPages} (#{String(startSlot).padStart(3, "0")}–#{String(endSlot).padStart(3, "0")})
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gold-light">
+                  ▼
+                </span>
+              </div>
+            </div>
 
-            {/* Tombol Berikutnya */}
             <button
               type="button"
               onClick={() => goToPage(page + 1)}
               disabled={page >= totalPages}
-              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+              className="btn btn-ghost btn-sm h-10 px-3 sm:px-4 font-bold text-xs sm:text-sm text-gold-light hover:bg-gold/20 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               Berikutnya ›
             </button>

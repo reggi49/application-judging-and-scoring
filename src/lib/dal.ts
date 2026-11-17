@@ -15,9 +15,10 @@ export const requireAdmin = () => requireUser("ADMIN");
 export const requireJuri = () => requireUser("JURI");
 
 /** Untuk route handler (API): kembalikan user atau null (jawab 401/403 sendiri). */
-export async function apiUser(role: "ADMIN" | "JURI"): Promise<SessionUser | null> {
+export async function apiUser(role?: "ADMIN" | "JURI"): Promise<SessionUser | null> {
   const u = await getSessionUser();
-  if (!u || u.role !== role) return null;
+  if (!u) return null;
+  if (role && u.role !== role) return null;
   if (u.role === "ADMIN" && u.mustChangePassword) return null;
   return u;
 }

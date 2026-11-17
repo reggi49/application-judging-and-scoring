@@ -37,6 +37,7 @@ export default async function JuriNilaiPage({ params }: { params: Promise<{ kode
         scope={`juri-${juri.id}`}
         endpoint="/api/juri/penilaian"
         karya={{
+          id: karya.id,
           kode: karya.kodeKarya,
           nama: karya.namaKarya,
           peserta: karya.peserta.nama,

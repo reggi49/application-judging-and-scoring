@@ -115,6 +115,12 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
       {/* FORM LOGIN ADMIN (DENGAN PASSWORD) */}
       {tab === "ADMIN" && (
         <form action={adminFormAction} className="space-y-4" noValidate>
+          <div className="rounded-xl border-2 border-gold-dark/60 bg-gold/15 p-3 text-center shadow-sm">
+            <p className="text-xs font-bold text-white">
+              Default Login: Username: <span className="text-gold-light">admin</span> · Password: <span className="text-gold-light">admin</span>
+            </p>
+          </div>
+
           <div>
             <label htmlFor="username" className="label text-sm">
               Username Admin
@@ -128,6 +134,7 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
               autoCorrect="off"
               spellCheck={false}
               placeholder="admin"
+              defaultValue="admin"
               required
             />
           </div>
@@ -142,16 +149,15 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
               type="password"
               className="input text-base"
               autoComplete="current-password"
-              placeholder="MBtech123"
+              placeholder="Masukkan password admin"
               required
             />
-            <p className="mt-1.5 text-xs font-medium text-gold-light">Password: MBtech123</p>
           </div>
 
           <FormMessage state={adminState} />
 
           <SubmitButton className="btn btn-gold w-full text-base py-3 mt-2" pending="Memverifikasi…">
-            Masuk sebagai Administrator
+            Masuk sebagai Administrator ➔
           </SubmitButton>
         </form>
       )}

@@ -6,7 +6,7 @@ import { savePenilaian, type SaveResult } from "./penilaian";
 import { audit } from "./audit";
 
 export const penilaianBody = z.object({
-  kodeKarya: z.string().regex(/^[A-Z0-9]{2,5}-[A-Z0-9]{2,5}-\d{3}$/, "Kode karya tidak valid."),
+  kodeKarya: z.string().regex(/^[A-Za-z0-9_-]{1,20}$/, "Kode karya / nomor peserta tidak valid."),
   clientUuid: z.string().trim().min(1).max(64).default(() => randomUUID()),
   nilai: z.record(z.string().max(30), z.number().int().min(0).max(100).nullable()),
   catatan: z.string().max(2000).nullable().optional(),

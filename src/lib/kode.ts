@@ -10,6 +10,11 @@ export function isAkronimValid(s: string): boolean {
   return AKRONIM_RE.test(s);
 }
 
+/** Format nomor urut slot 3 digit: 1 -> "001", 25 -> "025", 250 -> "250" */
+export function formatNomorSlot(noUrut: number): string {
+  return String(noUrut).padStart(3, "0");
+}
+
 /** ID Karya = AKRONIM PESERTA + AKRONIM KARYA + NOURUT (3 digit). Mis. BRM-CLS-001 */
 export function formatKodeKarya(kodePeserta: string, akronimKarya: string, noUrut: number): string {
   if (!isAkronimValid(kodePeserta)) throw new Error("Akronim peserta tidak valid");

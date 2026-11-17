@@ -41,6 +41,14 @@ yarn-error.log*
 *.tar.gz
 mysql_data/
 
+# database & testing
+*.db
+*.db-journal
+*.db-wal
+*.db.mysql.bak
+screenshot-*.png
+.playwright-mcp/
+
 # vercel
 .vercel
 
@@ -51,3 +59,4 @@ next-env.d.ts
 # project
 /.local
 /storage
+/dist-deploy

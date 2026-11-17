@@ -52,6 +52,7 @@ export default async function AdminInputNilaiPage({
           scope={`admin-${admin.id}-for-${selectedJuri.id}`}
           endpoint={`/api/admin/penilaian?juriId=${selectedJuri.id}`}
           karya={{
+            id: karyaDetail.id,
             kode: karyaDetail.kodeKarya,
             nama: karyaDetail.namaKarya,
             peserta: karyaDetail.peserta.nama,

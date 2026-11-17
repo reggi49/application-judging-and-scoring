@@ -4,9 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 enum Role {
@@ -32,8 +31,8 @@ enum InputOleh {
 
 model User {
   id                 Int       @id @default(autoincrement())
-  username           String    @unique @db.VarChar(50)
-  passwordHash       String    @map("password_hash") @db.VarChar(255)
+  username           String    @unique
+  passwordHash       String    @map("password_hash")
   role               Role
   isActive           Boolean   @default(true) @map("is_active")
   mustChangePassword Boolean   @default(false) @map("must_change_password")
@@ -50,7 +49,7 @@ model User {
 
 model Session {
   /// SHA-256 dari token (token asli hanya ada di cookie)
-  id        String   @id @db.Char(64)
+  id        String   @id
   userId    Int      @map("user_id")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
@@ -63,8 +62,8 @@ model Session {
 
 model Juri {
   id        Int       @id @default(autoincrement())
-  kodeJuri  String    @unique @map("kode_juri") @db.VarChar(20)
-  nama      String    @db.VarChar(120)
+  kodeJuri  String    @unique @map("kode_juri")
+  nama      String
   userId    Int       @unique @map("user_id")
   isActive  Boolean   @default(true) @map("is_active")
   deletedAt DateTime? @map("deleted_at")
@@ -79,9 +78,9 @@ model Juri {
 model Peserta {
   id           Int       @id @default(autoincrement())
   /// ID Peserta = akronim (2-5 karakter A-Z/0-9)
-  kodePeserta  String    @unique @map("kode_peserta") @db.VarChar(5)
-  nama         String    @db.VarChar(150)
-  deskripsi    String?   @db.Text
+  kodePeserta  String    @unique @map("kode_peserta")
+  nama         String
+  deskripsi    String?
   /// Penghitung nomor urut karya per peserta. Hanya bertambah (tidak dipakai ulang).
   karyaCounter Int       @default(0) @map("karya_counter")
   deletedAt    DateTime? @map("deleted_at")
@@ -96,12 +95,12 @@ model Peserta {
 model Karya {
   id           Int       @id @default(autoincrement())
   pesertaId    Int       @map("peserta_id")
-  akronimKarya String    @map("akronim_karya") @db.VarChar(5)
+  akronimKarya String    @map("akronim_karya")
   noUrut       Int       @map("no_urut")
   /// Mis. BRM-CLS-001 = kodePeserta + akronimKarya + noUrut(3 digit)
-  kodeKarya    String    @unique @map("kode_karya") @db.VarChar(20)
-  namaKarya    String    @map("nama_karya") @db.VarChar(150)
-  deskripsi    String?   @db.Text
+  kodeKarya    String    @unique @map("kode_karya")
+  namaKarya    String    @map("nama_karya")
+  deskripsi    String?
   deletedAt    DateTime? @map("deleted_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -117,11 +116,11 @@ model Karya {
 model KaryaGambar {
   id            Int      @id @default(autoincrement())
   karyaId       Int      @map("karya_id")
-  filename      String   @db.VarChar(80)
-  thumbFilename String   @map("thumb_filename") @db.VarChar(80)
+  filename      String
+  thumbFilename String   @map("thumb_filename")
   urutan        Int      @default(0)
   isCover       Boolean  @default(false) @map("is_cover")
-  mime          String   @db.VarChar(40)
+  mime          String
   size          Int
   createdAt     DateTime @default(now()) @map("created_at")
   karya         Karya    @relation(fields: [karyaId], references: [id], onDelete: Cascade)
@@ -132,11 +131,11 @@ model KaryaGambar {
 
 model Kriteria {
   id        Int     @id @default(autoincrement())
-  kode      String  @unique @db.VarChar(30)
-  nama      String  @db.VarChar(120)
-  deskripsi String? @db.VarChar(500)
+  kode      String  @unique
+  nama      String
+  deskripsi String?
   /// Persen dengan 2 desimal. Total semua kriteria = 100.00
-  bobot     Decimal @db.Decimal(5, 2)
+  bobot     Decimal
   urutan    Int     @default(0)
 
   detail PenilaianDetail[]
@@ -147,13 +146,13 @@ model Kriteria {
 model Penilaian {
   id              Int             @id @default(autoincrement())
   /// UUID dari perangkat juri; membuat retry aman (idempoten)
-  clientUuid      String          @unique @map("client_uuid") @db.Char(36)
+  clientUuid      String          @unique @map("client_uuid")
   juriId          Int             @map("juri_id")
   karyaId         Int             @map("karya_id")
   status          StatusPenilaian @default(DRAFT)
-  catatan         String?         @db.Text
+  catatan         String?
   /// Skor juri terskala exact (×10.000 tidak dipakai; disimpan DECIMAL(7,4) = tepat 4 desimal)
-  skorJuri        Decimal?        @map("skor_juri") @db.Decimal(7, 4)
+  skorJuri        Decimal?        @map("skor_juri")
   /// Versi naik tiap perubahan tersimpan di server
   version         Int             @default(1)
   /// Waktu ubah dari perangkat (epoch ms); mencegah data lama menimpa data baru
@@ -177,9 +176,9 @@ model PenilaianDetail {
   penilaianId   Int      @map("penilaian_id")
   kriteriaId    Int      @map("kriteria_id")
   /// 0-100 (dijaga juga oleh CHECK constraint di DB)
-  nilai         Int      @db.UnsignedTinyInt
+  nilai         Int
   /// Bobot saat nilai difinalkan (snapshot); null selama draft
-  bobotSnapshot Decimal? @map("bobot_snapshot") @db.Decimal(5, 2)
+  bobotSnapshot Decimal? @map("bobot_snapshot")
 
   penilaian Penilaian @relation(fields: [penilaianId], references: [id], onDelete: Cascade)
   kriteria  Kriteria  @relation(fields: [kriteriaId], references: [id])
@@ -194,7 +193,7 @@ model PenilaianHistory {
   penilaianId  Int      @map("penilaian_id")
   juriId       Int      @map("juri_id")
   karyaId      Int      @map("karya_id")
-  aksi         String   @db.VarChar(30)
+  aksi         String
   snapshot     Json
   actorUserId  Int?     @map("actor_user_id")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -205,7 +204,7 @@ model PenilaianHistory {
 
 model EventSetting {
   id        Int      @id
-  nama      String   @db.VarChar(150)
+  nama      String
   fase      Fase     @default(PERSIAPAN)
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -215,12 +214,12 @@ model EventSetting {
 model AuditLog {
   id         BigInt   @id @default(autoincrement())
   userId     Int?     @map("user_id")
-  aksi       String   @db.VarChar(50)
-  entitas    String?  @db.VarChar(50)
-  entitasId  String?  @map("entitas_id") @db.VarChar(50)
+  aksi       String
+  entitas    String?
+  entitasId  String?  @map("entitas_id")
   dataLama   Json?    @map("data_lama")
   dataBaru   Json?    @map("data_baru")
-  ip         String?  @db.VarChar(64)
+  ip         String?
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([createdAt])

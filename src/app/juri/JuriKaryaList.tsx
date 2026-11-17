@@ -40,6 +40,21 @@ export function JuriKaryaList({
     window.location.href = `/juri/karya/${encodeURIComponent(kodeKarya)}`;
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = q.trim();
+    if (!clean) return;
+    const num = parseInt(clean, 10);
+    if (!isNaN(num) && num >= 1 && num <= 250) {
+      const pad = String(num).padStart(3, "0");
+      window.location.href = `/juri/karya/${pad}`;
+      return;
+    }
+    if (filtered.length === 1) {
+      window.location.href = `/juri/karya/${filtered[0].kode}`;
+    }
+  };
+
   const counts = useMemo(() => {
     const c = { BELUM: 0, DRAFT: 0, FINAL: 0, total: items.length };
     for (const it of items) c[it.status]++;
@@ -81,7 +96,7 @@ export function JuriKaryaList({
   const pct = counts.total > 0 ? Math.round((counts.FINAL / counts.total) * 100) : 0;
 
   return (
-    <div className="space-y-4 pb-20 sm:pb-6">
+    <div className="space-y-4 pb-32 sm:pb-16">
       <PwaInstallPrompt />
 
       {/* 1. Executive Dashboard Juri — Optimal untuk Layar Mobile & Desktop */}
@@ -186,11 +201,11 @@ export function JuriKaryaList({
 
       {/* 2. Kontrol Pencarian & Tombol Pindai QR Utama */}
       <div className="space-y-2.5">
-        <div className="flex items-center gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
           <div className="relative flex-1">
             <input
               className="input text-base font-semibold py-3 pl-3.5 pr-10 shadow-inner"
-              placeholder="🔍 Cari ID motor, nama, atau bengkel…"
+              placeholder="🔍 Cari nomor slot (misal: 25) atau nama motor…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -207,6 +222,14 @@ export function JuriKaryaList({
           </div>
 
           <button
+            type="submit"
+            className="btn btn-ghost border border-gold/40 text-gold-light hover:bg-gold/20 shrink-0 px-3 py-3 font-bold text-sm hidden sm:inline-flex"
+            title="Buka karya / slot"
+          >
+            Buka
+          </button>
+
+          <button
             type="button"
             onClick={() => setScannerOpen(true)}
             className="btn btn-gold shrink-0 gap-1.5 px-3.5 sm:px-5 py-3 shadow-lg active:scale-95 transition-transform"
@@ -215,7 +238,7 @@ export function JuriKaryaList({
             <span className="text-xl">📷</span>
             <span className="font-extrabold text-sm sm:text-base">Scan QR</span>
           </button>
-        </div>
+        </form>
 
         {/* Tab Filter Segmented */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
@@ -412,48 +435,64 @@ export function JuriKaryaList({
         </div>
       )}
 
-      {/* 4. Navigasi Pagination 20 Item per Halaman */}
+      {/* 4. Navigasi Pagination Compact & Optimized Mobile */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-line/70">
-          <div className="text-xs font-semibold text-[#ded7c8] order-2 sm:order-1">
-            Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong> ({PAGE_SIZE} karya per halaman)
-          </div>
-
-          <div className="flex items-center gap-1.5 order-1 sm:order-2">
+        <div className="pt-4 border-t border-line/70">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-panel2/90 p-2 sm:p-2.5 shadow-md">
+            {/* Tombol Sebelumnya */}
             <button
               type="button"
               onClick={() => goToPage(page - 1)}
               disabled={page <= 1}
-              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+              className="btn btn-ghost btn-sm h-10 px-3 sm:px-4 font-bold text-xs sm:text-sm text-gold-light hover:bg-gold/20 disabled:opacity-30 disabled:hover:bg-transparent"
+              aria-label="Halaman sebelumnya"
             >
-              ‹ Sebelumnya
+              ‹ Prev
             </button>
 
-            {/* Nomor Halaman */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => goToPage(p)}
-                className={`min-w-8 h-8 rounded-md text-xs font-bold transition-all ${
-                  page === p
-                    ? "bg-gold text-ink shadow-md font-black"
-                    : "bg-panel2 border border-line text-[#ded7c8] hover:text-white hover:border-gold"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+            {/* Pemilih Halaman Cepat (Dropdown Select & Info Slot) */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs font-bold text-[#ded7c8] hidden xs:inline">
+                Hal:
+              </span>
+              <div className="relative">
+                <select
+                  value={page}
+                  onChange={(e) => goToPage(Number(e.target.value))}
+                  className="select select-sm h-10 bg-panel border-2 border-gold/50 text-gold-light font-black text-xs sm:text-sm pl-2.5 pr-7 rounded-xl appearance-none cursor-pointer focus:border-gold shadow-sm"
+                  aria-label="Pilih nomor halaman"
+                >
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                    const startSlot = (p - 1) * PAGE_SIZE + 1;
+                    const endSlot = Math.min(p * PAGE_SIZE, filtered.length);
+                    return (
+                      <option key={p} value={p}>
+                        {p} / {totalPages} (#{String(startSlot).padStart(3, "0")}–#{String(endSlot).padStart(3, "0")})
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gold-light">
+                  ▼
+                </span>
+              </div>
+            </div>
 
+            {/* Tombol Berikutnya */}
             <button
               type="button"
               onClick={() => goToPage(page + 1)}
               disabled={page >= totalPages}
-              className="btn btn-ghost btn-sm px-3 font-bold text-xs"
+              className="btn btn-ghost btn-sm h-10 px-3 sm:px-4 font-bold text-xs sm:text-sm text-gold-light hover:bg-gold/20 disabled:opacity-30 disabled:hover:bg-transparent"
+              aria-label="Halaman berikutnya"
             >
-              Berikutnya ›
+              Next ›
             </button>
           </div>
+
+          <p className="mt-2 text-center text-[11px] font-medium text-[#ded7c8]">
+            Menampilkan slot <strong>#{String(startIndex + 1).padStart(3, "0")}</strong> s/d <strong>#{String(Math.min(startIndex + PAGE_SIZE, filtered.length)).padStart(3, "0")}</strong> dari {filtered.length} total karya
+          </p>
         </div>
       )}
 

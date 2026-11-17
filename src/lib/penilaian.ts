@@ -118,7 +118,6 @@ export async function savePenilaian(input: SaveInput): Promise<SaveResult> {
           },
         });
       }
-      await tx.$queryRaw`SELECT id FROM penilaian WHERE id = ${row.id} FOR UPDATE`;
       const cur = await tx.penilaian.findUniqueOrThrow({
         where: { id: row.id },
         include: { detail: { include: { kriteria: true } } },

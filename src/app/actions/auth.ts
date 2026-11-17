@@ -66,10 +66,10 @@ export async function loginAdminAction(_prev: ActionState, fd: FormData): Promis
     return { error: "Username atau password salah." };
   }
 
-  const ok = await verifyPassword(user.passwordHash, password).catch(() => false);
-  if (!ok) {
+  const verified = await verifyPassword(user.passwordHash, password).catch(() => false);
+  if (!verified) {
     await audit({ userId: user.id, aksi: "LOGIN_ADMIN_GAGAL", entitas: "user", entitasId: user.id });
-    return { error: "Password salah. Pastikan menggunakan password admin yang benar." };
+    return { error: "Username atau password salah." };
   }
 
   if (!user.isActive) return { error: "Akun admin tidak aktif." };
