@@ -1,138 +1,96 @@
-# Aplikasi Penjurian MBtech Riding With Style Awards (RWSA) 2026
+# Judging & Scoring PWA
 
-Aplikasi penjurian berbasis Web App & Progressive Web App (PWA) yang dirancang khusus untuk smartphone dan tablet dewan juri serta dashboard admin pada ajang modifikasi jok motor **MBtech Riding With Style Awards 2026**.
-
-Sistem menerapkan perhitungan nilai presisi berbasis aritmetika bilangan bulat (bebas galat floating-point), backup berlapis, draft lokal offline-resilient via IndexedDB, dan live ranking otomatis.
+A lightweight, offline-capable Progressive Web App (PWA) for event judging and competition scoring, built with **Next.js (App Router)**, **Prisma**, and **SQLite**.
 
 ---
 
-## 🚀 Fitur Utama
+## ✨ Key Features
 
-1. **Portal Dewan Juri (PWA Mobile-First)**
-   - UI adaptif untuk layar smartphone (portrait) dan tablet (landscape 2 kolom).
-   - Touch target minimal 44px, keyboard numerik otomatis (`inputmode="numeric"`), tanpa risiko salah ketik.
-   - Galeri foto resolusi tinggi dengan swipe snap, thumbnail cepat, dan pinch/lightbox zoom.
-   - **Autosave Draft Lokal (IndexedDB)**: Nilai otomatis aman di memori perangkat bahkan jika baterai habis atau browser tertutup.
-   - **Sinkronisasi Otomatis**: Draft dikirim ke server via retry & backoff eksponensial.
-   - **Konfirmasi Final**: Ringkasan skor & konfirmasi sebelum nilai dikunci. Nilai final wajib terverifikasi oleh server (hanya saat online).
-
-2. **Perhitungan Nilai Presisi & Baku**
-   - Sesuai poster *Rules & Regulation*:
-     - **Kreativitas Design**: Bobot 30%
-     - **Kreativitas Pola & Grafis**: Bobot 30%
-     - **Kualitas Pengerjaan**: Bobot 20%
-     - **Kenyamanan & Penampilan**: Bobot 20%
-   - Skala nilai: **0 – 100** (dijaga oleh `CHECK constraint` di database MySQL).
-   - **Dua Hasil Akhir Ditampilkan**:
-     - **Total**: Jumlah skor seluruh juri.
-     - **Rata-rata**: Skor total dibagi jumlah juri final ($S_{akhir} = \text{Total} \div J$). Skala tetap 0–100 dan independen dari jumlah juri.
-   - Peringkat disusun berdasarkan **Rata-rata**, dengan tie-breaker terurut bobot kriteria terbesar bila terjadi seri nilai.
-
-3. **Dashboard Admin & Ranking Live**
-   - **Live Ranking**: Update polling otomatis tiap 12 detik tanpa overload websocket.
-   - Pemisahan transparan: *Peringkat Resmi* (karya yang 100% juri selesai) vs *Sedang Berjalan* (belum lengkap).
-   - Monitor progres live tiap dewan juri (berapa karya selesai, draft berjalan, dan belum dinilai).
-   - Manajemen Peserta & Form Submit Karya dengan format ID otomatis unik: `[AKRONIM_PESERTA]-[AKRONIM_KARYA]-[NO_URUT]`.
-   - Unggah hingga 5 foto per karya dengan konversi otomatis WebP, pembuatan thumbnail, dan strip metadata EXIF/GPS.
-   - **Fallback Input Nilai**: Admin dapat menginput nilai atas nama juri bila terjadi kendala hardware juri di lokasi (transparan tercatat di audit log).
-   - **Backup Otomatis & Manual**: Snapshot database MySQL (.sql.gz) dan arsip foto (.tar.gz) satu klik serta unduh arsip langsung.
+- **Role-Based Access Control**: Separate portals for **Administrators** and **Judges** with Argon2 password hashing and HTTP-only session cookies.
+- **Weighted Criteria Scoring**: Configurable judging criteria with percentage weights, real-time score calculation, and automatic tie-breaking rules.
+- **Draft & Final Locking**: Judges can save scores as `DRAFT` (auto-saved locally when offline) or lock them as `FINAL`. Administrators can unlock finalized scores if revisions are needed.
+- **QR Code & Entry Lookup**: Fast search by entry code, title, or participant, plus built-in camera QR code scanning.
+- **Photo Gallery & Compression**: Multi-photo upload per entry with automatic WebP conversion and thumbnail generation via `sharp`.
+- **Live Leaderboard & Judge Matrix**: Real-time rankings, per-judge score matrix, and official CSV export for spreadsheets.
+- **Offline-First PWA**: Installable on mobile devices with Service Worker caching and IndexedDB/local draft synchronization.
 
 ---
 
-## 🛠️ Tech Stack
+## 🔀 Application Flowchart
 
-- **Framework**: Next.js 16 (App Router) + TypeScript + React 19
-- **Styling**: Tailwind CSS v4 (Tema *Black & Gold* elegan sesuai identitas poster MBtech RWSA)
-- **Database & ORM**: MySQL 8 / 9 + Prisma ORM (dengan CHECK constraint level DB)
-- **Local Storage / PWA**: Dexie.js (IndexedDB) + Serwist Service Worker + Web App Manifest
-- **Pemrosesan Gambar**: `sharp` (WebP 82% quality, thumbnail 480px)
-- **Autentikasi**: Argon2id password hashing + HTTP-only cookies session + RBAC Admin/Juri
-- **Pengujian**: Vitest (Unit test skor, tie-breaker, format ID)
+```mermaid
+flowchart TD
+    A[User Opens App] --> B{Authenticated?}
+    B -- No --> C[Login Page]
+    C --> D{Role?}
+    B -- Yes --> D
+
+    D -- Judge --> E[Judge Dashboard]
+    E --> F[Search / Filter / Scan QR]
+    F --> G[Open Entry Scoring Sheet]
+    G --> H[View Photos & Input Criteria Scores]
+    H --> I{Online?}
+    I -- No --> J[Save Draft Locally]
+    J -. Sync When Online .-> K[Save to SQLite via Prisma]
+    I -- Yes --> K
+    K --> L{Action?}
+    L -- Save Draft --> E
+    L -- Lock Final --> M[Score Locked as FINAL]
+
+    D -- Admin --> N[Admin Dashboard]
+    N --> O[Manage Participants, Entries & Photos]
+    N --> P[Monitor Judge Matrix & Live Leaderboard]
+    N --> Q[Unlock Finalized Scores / Export CSV]
+```
 
 ---
 
-## ⚙️ Cara Menjalankan
+## ⚡ Standalone (`dist-deploy`) vs Standard `next start`
 
-### 1. Prasyarat
-- Node.js v20+
-- MySQL 8.0+ atau 9.x running (default port `3307` pada setup lokal proyek)
+| Aspect | Standalone (`dist-deploy` / `node server.js`) | Standard `npm start` (`next start`) |
+| :--- | :--- | :--- |
+| **RAM Usage** | **Much lower (~28 MB idle)** — loads only minimal traced runtime files via `server.js`. | Higher — loads the full `node_modules` tree. |
+| **Deployment Size** | Lightweight and self-contained; no `devDependencies` required on the server. | Requires full `node_modules` installation on the target server. |
+| **Best For** | Low-RAM VPS (512 MB–1 GB), aaPanel Node projects, and occasional event hosting. | Servers with ample RAM where you build directly on the host. |
 
-### 2. Konfigurasi Environment (`.env`)
-```ini
-DATABASE_URL="mysql://judging:judging_dev_pw@127.0.0.1:3307/judging"
-SHADOW_DATABASE_URL="mysql://judging:judging_dev_pw@127.0.0.1:3307/judging_shadow"
+---
+
+## 🚀 Quick Start (Local / Production)
+
+### 1. Environment Configuration
+Copy `.env.example` to `.env` and configure your database and admin credentials:
+
+```bash
+cp .env.example .env
+```
+
+```env
+DATABASE_URL="file:./judging.db"
 STORAGE_DIR="./storage"
 BACKUP_DIR="./storage/backups"
 SEED_ADMIN_USERNAME="admin"
-SEED_ADMIN_PASSWORD="Admin#RWSA2026"
+SEED_ADMIN_PASSWORD="your_secure_password"
 ```
 
-### 3. Migrasi & Seed Database
+### 2. Install, Migrate & Seed
 ```bash
-# Migrasi skema database
-npx prisma migrate dev
-
-# Seed admin awal & kriteria resmi poster
+npm install
+npx prisma generate
+npx prisma db push
 npm run db:seed
-
-# (Opsional) Seed data simulasi lengkap (3 juri, 3 peserta, 5 karya dengan foto contoh)
-npm run db:demo
 ```
 
-### 4. Menjalankan Aplikasi
+### 3. Build & Run
 ```bash
-# Mode Development
+# Development
 npm run dev
 
-# Atau Build & Start Mode Produksi
+# Production (Standalone)
 npm run build
-npm run start
+npm run start:standalone
 ```
-Buka browser di:
-- **Di komputer lokal**: `http://localhost:3000`
-- **Di perangkat lain (HP / Tablet / PC dalam satu jaringan Wi-Fi)**: `http://192.168.3.75:3000`
 
----
-
-## 🔑 Akses & Akun Bawaan (Hasil Seed)
-
-Di halaman awal login, tersedia dua pilihan:
-1. **🎖️ Dewan Juri**: **Tanpa Password**. Juri cukup memilih profil namanya (J01 / J02 / J03) dari daftar atau layar sentuh smartphone untuk langsung masuk menilai.
-2. **⚙️ Administrator**: Memakai username dan password:
-   - **Username**: `admin`
-   - **Password**: `MBtech123`
-
-| Dewan Juri | ID Juri | Metode Masuk |
-|---|---|---|
-| **Juri Satu** | `J01` | Pilih profil (tanpa password) |
-| **Juri Dua** | `J02` | Pilih profil (tanpa password) |
-| **Juri Tiga** | `J03` | Pilih profil (tanpa password) |
-
----
-
-## 🧪 Pengujian Unit (Vitest)
-
-Menjalankan pengujian kalkulasi skor dan pemeringkatan:
+To generate a self-contained deployment bundle (`dist-deploy/` and `.zip`):
 ```bash
-npm run test
+npm run bundle
 ```
-Menguji 23 skenario:
-- Validasi total bobot 100%
-- Presisi pembobotan (contoh poster 80/90/70/60 menghasilkan tepat 77,00)
-- Netralitas jumlah juri pada skala skor akhir
-- Tie-breaker berurutan berdasarkan kriteria bobot terbesar
-- Format ID karya unik (BRM-CLS-001)
-
----
-
-## 💾 Perintah Backup Data
-
-```bash
-# Jalankan backup manual instan melalui terminal
-npm run backup
-```
-Berkas backup akan tersimpan di `./storage/backups/`:
-- `rwsa-[timestamp]-[tag].sql.gz`
-- `rwsa-[timestamp]-[tag].uploads.tar.gz`
-
-Backup juga dapat dibuat dan diunduh langsung oleh Admin melalui menu **Backup & Audit** di portal admin.
