@@ -94,3 +94,9 @@ To generate a self-contained deployment bundle (`dist-deploy/` and `.zip`):
 ```bash
 npm run bundle
 ```
+
+---
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
