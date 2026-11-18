@@ -22,8 +22,9 @@ services:
     build: .
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
+      - PORT=3001
       - DATABASE_URL=mysql://judging:judging_password_2026@db:3306/judging
       - STORAGE_DIR=/app/storage
       - MYSQLDUMP_PATH=/usr/bin/mysqldump
