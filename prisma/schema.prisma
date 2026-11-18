@@ -189,7 +189,7 @@ model PenilaianDetail {
 
 /// Riwayat append-only setiap perubahan nilai
 model PenilaianHistory {
-  id           BigInt   @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   penilaianId  Int      @map("penilaian_id")
   juriId       Int      @map("juri_id")
   karyaId      Int      @map("karya_id")
@@ -212,7 +212,7 @@ model EventSetting {
 }
 
 model AuditLog {
-  id         BigInt   @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   userId     Int?     @map("user_id")
   aksi       String
   entitas    String?
