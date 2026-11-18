@@ -29,7 +29,7 @@ services:
       - MYSQLDUMP_PATH=/usr/bin/mysqldump
       - BACKUP_DIR=/app/storage/backups
       - SEED_ADMIN_USERNAME=admin
-      - SEED_ADMIN_PASSWORD=MBtech123
+      - SEED_ADMIN_PASSWORD=Juri#2026
     volumes:
       - ./storage:/app/storage
     depends_on:
