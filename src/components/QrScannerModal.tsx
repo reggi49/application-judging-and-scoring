@@ -5,14 +5,19 @@ import { Html5Qrcode } from "html5-qrcode";
 
 export function parseKodeKaryaFromQr(text: string): string | null {
   const trimmed = text.trim();
-  const urlMatch = trimmed.match(/\/juri\/karya\/([A-Za-z0-9]{2,5}-[A-Za-z0-9]{2,5}-\d{3})/i);
-  if (urlMatch) return urlMatch[1].toUpperCase();
 
-  const directMatch = trimmed.match(/^[A-Za-z0-9]{2,5}-[A-Za-z0-9]{2,5}-\d{3}$/);
-  if (directMatch) return directMatch[0].toUpperCase();
+  // 1. URL pattern: misal .../juri/karya/001 atau .../juri/karya/SKR-BLM-001
+  const urlMatch = trimmed.match(/\/juri\/karya\/([A-Za-z0-9_-]{1,20})/i);
+  if (urlMatch) return urlMatch[1];
 
-  const embeddedMatch = trimmed.match(/([A-Za-z0-9]{2,5}-[A-Za-z0-9]{2,5}-\d{3})/i);
-  if (embeddedMatch) return embeddedMatch[1].toUpperCase();
+  // 2. Angka langsung (misal: "1", "25", "250")
+  if (/^\d{1,4}$/.test(trimmed)) {
+    return trimmed.padStart(3, "0");
+  }
+
+  // 3. Format kode karya / slot langsung (misal: "001" atau "BRM-001")
+  const directMatch = trimmed.match(/^[A-Za-z0-9_-]{1,20}$/);
+  if (directMatch) return directMatch[0];
 
   return null;
 }

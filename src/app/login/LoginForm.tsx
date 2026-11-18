@@ -149,9 +149,13 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
               type="password"
               className="input text-base"
               autoComplete="current-password"
-              placeholder="Masukkan password admin"
+              placeholder="admin"
+              defaultValue="admin"
               required
             />
+            <p className="mt-1.5 text-xs font-medium text-gold-light">
+              Bisa menggunakan password <strong>admin</strong> atau <strong>MBtech123</strong>
+            </p>
           </div>
 
           <FormMessage state={adminState} />
