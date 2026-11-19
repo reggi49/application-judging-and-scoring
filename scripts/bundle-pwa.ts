@@ -136,6 +136,29 @@ async function run() {
   fs.writeFileSync(path.join(uploadsDir, ".gitkeep"), "");
   fs.writeFileSync(path.join(backupsDir, ".gitkeep"), "");
 
+  // Pastikan server.js membaca .env terlebih dahulu & default port 3001
+  const serverJsPath = path.join(BUNDLE_DIR, "server.js");
+  if (fs.existsSync(serverJsPath)) {
+    const envLoader = [
+      "// Muat .env terlebih dahulu agar PORT & DATABASE_URL selalu terbaca",
+      "try {",
+      "  const _fs = require('fs');",
+      "  const _path = require('path');",
+      "  const _envFile = _path.join(__dirname, '.env');",
+      "  if (_fs.existsSync(_envFile)) {",
+      "    for (const _l of _fs.readFileSync(_envFile, 'utf8').split(/\\r?\\n/)) {",
+      "      const _m = _l.match(/^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.*)\\s*$/);",
+      "      if (_m && !process.env[_m[1]]) process.env[_m[1]] = _m[2].replace(/^['\"]|['\"]$/g, '');",
+      "    }",
+      "  }",
+      "} catch {}",
+      "process.env.PORT = process.env.PORT || '3001';",
+      "",
+    ].join("\n");
+    const origServer = fs.readFileSync(serverJsPath, "utf8");
+    fs.writeFileSync(serverJsPath, envLoader + origServer, "utf8");
+  }
+
   // Minimal package.json untuk hosting Node.js selector / npm start
   const minimalPackageJson = {
     name: "rwsa-judging",
