@@ -13,7 +13,7 @@ export function BackupTrigger() {
         <div>
           <h2 className="font-title text-lg font-bold text-gold-light">Backup Database & Foto</h2>
           <p className="text-xs text-muted">
-            Buat snapshot lengkap database MySQL (.sql.gz) dan arsip foto (.tar.gz) secara instan.
+            Buat snapshot lengkap database SQLite (.db.gz) dan arsip foto (.tar.gz) secara instan.
           </p>
         </div>
         <form action={formAction}>

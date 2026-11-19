@@ -5,19 +5,19 @@ Paket ini telah disiapkan agar dapat langsung diunggah ke VPS Linux (Ubuntu, Deb
 ---
 
 ## 📁 Isi Paket Arsip
-1. `docker-compose.yml` & `Dockerfile` — Setup Docker otomatis (Web + Database MariaDB 10.11).
-2. `db_rwsa.sql` — Dump database awal lengkap (kriteria 30%/30%/20%/20%, profil dewan juri, akun admin, karya contoh).
+1. `docker-compose.yml` & `Dockerfile` — Setup Docker otomatis (App + SQLite).
+2. `prisma/` — Skema & migrasi SQLite (`judging.db`).
 3. `deploy.sh` — Skrip instalasi & build otomatis 1-klik untuk server berbasis Node.js.
 4. `start-vps.sh` — Skrip runner produksi.
 5. `ecosystem.config.cjs` — Konfigurasi PM2 Process Manager.
-6. `.env.production` — Template konfigurasi environment produksi.
+6. `.env.example` — Template konfigurasi environment produksi.
 7. `storage/uploads/` — Folder aset foto jok motor contoh siap pakai.
 
 ---
 
 ## ⚡ METODE 1: Menggunakan Docker (Rekomendasi Utama - 1 Klik)
 
-Metode ini paling mudah karena **tidak perlu menginstall Node.js atau MySQL** secara manual di VPS.
+Metode ini paling mudah karena **tidak perlu menginstall Node.js** atau layanan database terpisah secara manual di VPS.
 
 ### Langkah-langkah:
 1. Upload file zip ke VPS dan ekstrak:
@@ -32,15 +32,15 @@ Metode ini paling mudah karena **tidak perlu menginstall Node.js atau MySQL** se
    ```
 
 3. **Selesai!** 
-   - Database MariaDB otomatis aktif dan mengimpor file `db_rwsa.sql`.
-   - Web App Next.js otomatis di-build dan berjalan di port `3000`.
-   - Akses aplikasi di browser: `http://IP_VPS_ANDA:3000`.
+   - Database SQLite otomatis dibuat & dimigrasi di volume `./storage/judging.db`.
+   - Web App Next.js otomatis di-build dan berjalan di port `3001`.
+   - Akses aplikasi di browser: `http://IP_VPS_ANDA:3001`.
 
 ---
 
 ## 🛠️ METODE 2: Menggunakan Node.js + PM2 (Direct VPS / aaPanel)
 
-Gunakan metode ini jika VPS Anda sudah terpasang Node.js (v20+) dan MySQL / MariaDB (misalnya via aaPanel, cPanel, atau LAMP stack).
+Gunakan metode ini jika VPS Anda sudah terpasang Node.js (v20+).
 
 ### Langkah-langkah:
 1. Upload dan ekstrak file zip di folder web Anda (misal `/www/wwwroot/rwsa` atau `/var/www/rwsa`).
@@ -49,19 +49,20 @@ Gunakan metode ini jika VPS Anda sudah terpasang Node.js (v20+) dan MySQL / Mari
    cd /var/www/rwsa
    ```
 
-3. Buat database di MySQL VPS Anda (misalnya nama database: `judging`), lalu impor data awal:
+3. Salin `.env.example` menjadi `.env` lalu sesuaikan jika perlu:
    ```bash
-   mysql -u root -p judging < db_rwsa.sql
-   ```
-
-4. Sesuaikan file `.env` dengan user & password database Anda:
-   ```bash
-   cp .env.production .env
+   cp .env.example .env
    nano .env
    ```
-   *(Ubah nilai `DATABASE_URL="mysql://USER:PASSWORD@127.0.0.1:3306/judging"` sesuai kredensial Anda)*.
+   *(Pastikan `DATABASE_URL="file:./judging.db"`).*
 
-5. Jalankan skrip deploy 1-klik:
+4. Jalankan migrasi SQLite & seed awal:
+   ```bash
+   npx prisma migrate deploy
+   npm run db:seed
+   ```
+
+5. Jalankan skrip deploy:
    ```bash
    chmod +x deploy.sh
    ./deploy.sh

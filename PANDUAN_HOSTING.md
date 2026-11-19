@@ -15,9 +15,8 @@ Paket ini sudah dibuild dalam mode **Next.js Standalone PWA**. Semua dependensi 
 ├── .next/                  # Aset hasil kompilasi server & statis (CSS/JS)
 ├── public/                 # Ikon PWA, manifest.json, sw.js (Service Worker)
 ├── node_modules/           # Library produksi + engine multi-platform (Linux & macOS)
-├── prisma/                 # Skema & migrasi database
+├── prisma/                 # Skema, migrasi & database SQLite (judging.db)
 ├── storage/                # Folder penyimpanan upload foto karya & backup
-├── db_rwsa.sql             # Dump database awal (siap diimpor)
 ├── .env.example            # Contoh konfigurasi environment
 ├── ecosystem.config.cjs    # Konfigurasi PM2 untuk cPanel / VPS
 ├── start.sh                # Skrip jalan cepat Linux / Mac
@@ -26,16 +25,13 @@ Paket ini sudah dibuild dalam mode **Next.js Standalone PWA**. Semua dependensi 
 
 ---
 
-## 🗄️ Langkah 1: Buat & Impor Database MySQL
+## 🗄️ Langkah 1: Siapkan Database SQLite (Tanpa Server Database Terpisah)
 
-1. Buat database baru di cPanel / phpMyAdmin / VPS (contoh nama: `rwsa_judging`).
-2. Buat user database dan berikan hak akses penuh (*ALL PRIVILEGES*) ke database tersebut.
-3. **Impor Tabel & Data Awal**:
-   - **Lewat phpMyAdmin**: Buka database -> menu **Import** -> pilih berkas `db_rwsa.sql` -> tekan **Go/Kirim**.
-   - **Lewat Terminal SSH**:
-     ```bash
-     mysql -u nama_user -p rwsa_judging < db_rwsa.sql
-     ```
+Aplikasi menggunakan database **SQLite** yang tersimpan langsung sebagai file (`prisma/judging.db`) sehingga tidak membutuhkan layanan database terpisah:
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
 
 ---
 
@@ -45,16 +41,15 @@ Salin berkas `.env.example` menjadi `.env`:
 ```bash
 cp .env.example .env
 ```
-Buka berkas `.env` lalu sesuaikan kredensial database Anda:
+Buka berkas `.env` lalu sesuaikan konfigurasi Anda:
 ```ini
-DATABASE_URL="mysql://nama_user:password_anda@127.0.0.1:3306/rwsa_judging"
+PORT=3001
+DATABASE_URL="file:./judging.db"
 STORAGE_DIR="./storage"
 BACKUP_DIR="./storage/backups"
-MYSQLDUMP_PATH="/usr/bin/mysqldump"
 SEED_ADMIN_USERNAME="admin"
 SEED_ADMIN_PASSWORD="MBtech123"
 ```
-*(Ganti `nama_user`, `password_anda`, dan `rwsa_judging` sesuai database hosting Anda)*.
 
 ---
 

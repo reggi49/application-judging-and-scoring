@@ -1,23 +1,4 @@
 services:
-  db:
-    image: mariadb:10.11
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rwsa_root_password_2026
-      MYSQL_DATABASE: judging
-      MYSQL_USER: judging
-      MYSQL_PASSWORD: judging_password_2026
-    volumes:
-      - ./mysql_data:/var/lib/mysql
-      - ./db_rwsa.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-    ports:
-      - "127.0.0.1:3306:3306"
-    healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-prwsa_root_password_2026"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     build: .
     restart: always
@@ -25,14 +6,10 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - DATABASE_URL=mysql://judging:judging_password_2026@db:3306/judging
+      - DATABASE_URL=file:/app/storage/judging.db
       - STORAGE_DIR=/app/storage
-      - MYSQLDUMP_PATH=/usr/bin/mysqldump
       - BACKUP_DIR=/app/storage/backups
       - SEED_ADMIN_USERNAME=admin
       - SEED_ADMIN_PASSWORD=Juri#2026
     volumes:
       - ./storage:/app/storage
-    depends_on:
-      db:
-        condition: service_healthy

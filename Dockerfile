@@ -1,8 +1,8 @@
 FROM node:20-bookworm-slim
 
-# Install OpenSSL & default-mysql-client (for mysqldump feature)
+# Install OpenSSL (required by Prisma engine on Linux)
 RUN apt-get update -y && \
-    apt-get install -y openssl default-mysql-client && \
+    apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -28,5 +28,5 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-# Run database migrations and start production server
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+# Run SQLite migrations and start production server
+CMD ["sh", "-c", "mkdir -p /app/storage/uploads /app/storage/backups && npx prisma migrate deploy && npm run start"]

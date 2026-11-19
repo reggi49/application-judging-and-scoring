@@ -112,8 +112,7 @@ async function run() {
     }
   }
 
-  log("7. Menyalin konfigurasi, database, skema, dan panduan...");
-  fs.copyFileSync(path.join(ROOT, "db_rwsa.sql"), path.join(BUNDLE_DIR, "db_rwsa.sql"));
+  log("7. Menyalin konfigurasi, skema, dan panduan...");
   fs.copyFileSync(path.join(ROOT, ".env.example"), path.join(BUNDLE_DIR, ".env.example"));
   fs.copyFileSync(path.join(ROOT, "ecosystem.config.cjs"), path.join(BUNDLE_DIR, "ecosystem.config.cjs"));
   fs.copyFileSync(path.join(ROOT, "start.sh"), path.join(BUNDLE_DIR, "start.sh"));

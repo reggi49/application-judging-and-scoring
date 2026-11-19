@@ -15,13 +15,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
   try {
     const file = backupFilePath(name);
     const buf = await readFile(file);
-    const contentType = name.endsWith(".sql.gz")
-      ? "application/gzip"
-      : "application/gzip";
 
     return new NextResponse(new Uint8Array(buf), {
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": "application/gzip",
         "Content-Disposition": `attachment; filename="${name}"`,
         "Cache-Control": "no-store",
       },

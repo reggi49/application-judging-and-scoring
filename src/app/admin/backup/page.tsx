@@ -63,7 +63,7 @@ export default async function AdminBackupPage() {
                     <td className="font-mono text-xs text-cream">{b.name}</td>
                     <td>
                       <span className={`badge ${b.kind === "db" ? "badge-gold" : "badge-ok"}`}>
-                        {b.kind === "db" ? "MySQL Dump" : "Uploads Tar"}
+                        {b.kind === "db" ? "SQLite Snapshot" : "Uploads Tar"}
                       </span>
                     </td>
                     <td className="num text-right text-xs text-muted">

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3001",
-    "build": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",
+    "build": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && rm -f .next/standalone/prisma/*.db*",
     "bundle": "tsx scripts/bundle-pwa.ts",
     "start": "sh -c 'set -a; [ -f .env ] && . ./.env; set +a; exec next start -H 0.0.0.0 -p ${PORT:-3001}'",
     "start:standalone": "sh -c 'set -a; [ -f .env ] && . ./.env; set +a; export PORT=${PORT:-3001}; exec node .next/standalone/server.js'",
