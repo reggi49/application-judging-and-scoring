@@ -10,10 +10,26 @@ export const metadata: Metadata = {
   title: { default: "RWSA 2026 · Penjurian", template: "%s · RWSA 2026" },
   description: "Aplikasi penjurian MBtech Riding With Style Awards 2026",
   applicationName: "RWSA Penjurian",
-  appleWebApp: { capable: true, title: "RWSA Juri", statusBarStyle: "black-translucent" },
+  appleWebApp: {
+    capable: true,
+    title: "RWSA Juri",
+    statusBarStyle: "black-translucent",
+  },
   formatDetection: { telephone: false },
   robots: { index: false, follow: false },
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

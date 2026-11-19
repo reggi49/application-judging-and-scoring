@@ -3,7 +3,7 @@
  * Yang di-cache: aset statis build (/_next/static), ikon, dan halaman offline.
  * Draft nilai juri disimpan oleh aplikasi sendiri di IndexedDB (bukan oleh service worker).
  */
-const VERSION = "rwsa-v1";
+const VERSION = "rwsa-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const OFFLINE_URL = "/offline.html";
 
@@ -11,8 +11,17 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((c) => c.addAll([OFFLINE_URL, "/icons/icon-192.png"]))
-      .then(() => self.skipWaiting()),
+      .then((c) =>
+        c.addAll([
+          OFFLINE_URL,
+          "/icons/icon-192.png",
+          "/icons/icon-384.png",
+          "/icons/icon-512.png",
+          "/icons/maskable-512.png",
+          "/icons/apple-touch-icon.png",
+        ])
+      )
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -21,7 +30,7 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
   );
 });
 
@@ -46,8 +55,8 @@ self.addEventListener("fetch", (event) => {
               caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
             }
             return res;
-          }),
-      ),
+          })
+      )
     );
     return;
   }
@@ -57,4 +66,3 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
   }
 });
-
