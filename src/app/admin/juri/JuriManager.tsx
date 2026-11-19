@@ -23,11 +23,17 @@ const PAGE_SIZE = 20;
 export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
   const [createState, createFormAction] = useActionState(createJuriAction, {});
   const [editId, setEditId] = useState<number | null>(null);
-  const [editState, editFormAction] = useActionState(updateJuriAction, {});
+  const [editState, editFormAction, isEditPending] = useActionState(updateJuriAction, {});
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    if (editState?.ok) {
+      setEditId(null);
+    }
+  }, [editState]);
 
   const counts = useMemo(() => {
     let active = 0;
@@ -69,6 +75,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
   return (
     <div className="space-y-5">
       <FormMessage state={createState} />
+      <FormMessage state={editState} />
 
       {/* Kontrol Mobile & Desktop: Pencarian, Filter Cepat, & Tombol Tambah */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -175,26 +182,27 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                       <td className="num font-black text-lg text-gold-light tracking-wide">{j.kodeJuri}</td>
                       <td>
                         {editId === j.id ? (
-                          <form
-                            action={async (fd) => {
-                              await editFormAction(fd);
-                              setEditId(null);
-                            }}
-                            className="flex items-center gap-2"
-                          >
+                          <form action={editFormAction} className="flex items-center gap-2">
                             <input type="hidden" name="id" value={j.id} />
                             <input
                               name="nama"
                               defaultValue={j.nama}
+                              minLength={2}
+                              maxLength={120}
                               className="input text-xs font-semibold py-1.5"
                               required
                               autoFocus
                             />
-                            <button type="submit" className="btn btn-gold btn-sm text-xs font-bold">
-                              Simpan
+                            <button
+                              type="submit"
+                              disabled={isEditPending}
+                              className="btn btn-gold btn-sm text-xs font-bold"
+                            >
+                              {isEditPending ? "Menyimpan…" : "Simpan"}
                             </button>
                             <button
                               type="button"
+                              disabled={isEditPending}
                               className="btn btn-ghost btn-sm text-xs"
                               onClick={() => setEditId(null)}
                             >
@@ -226,9 +234,9 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                             <button
                               type="button"
                               onClick={() => setEditId(j.id)}
-                              className="btn btn-ghost btn-sm text-xs font-bold"
+                              className="btn btn-outline btn-sm text-xs font-bold"
                             >
-                              Edit
+                              ✎ Edit
                             </button>
                           )}
 
@@ -304,10 +312,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                   {/* Mode Edit Mobile */}
                   {editId === j.id ? (
                     <form
-                      action={async (fd) => {
-                        await editFormAction(fd);
-                        setEditId(null);
-                      }}
+                      action={editFormAction}
                       className="space-y-2 rounded-lg bg-panel2/80 p-3 border border-gold-dark/60"
                     >
                       <input type="hidden" name="id" value={j.id} />
@@ -317,16 +322,23 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                       <input
                         name="nama"
                         defaultValue={j.nama}
+                        minLength={2}
+                        maxLength={120}
                         className="input text-sm font-semibold"
                         required
                         autoFocus
                       />
                       <div className="flex items-center gap-2 pt-1">
-                        <button type="submit" className="btn btn-gold btn-sm flex-1 font-bold">
-                          Simpan Perubahan
+                        <button
+                          type="submit"
+                          disabled={isEditPending}
+                          className="btn btn-gold btn-sm flex-1 font-bold"
+                        >
+                          {isEditPending ? "Menyimpan…" : "Simpan Perubahan"}
                         </button>
                         <button
                           type="button"
+                          disabled={isEditPending}
                           className="btn btn-ghost btn-sm text-xs"
                           onClick={() => setEditId(null)}
                         >

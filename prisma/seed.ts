@@ -3,7 +3,7 @@ import { hash } from "@node-rs/argon2";
 
 const db = new PrismaClient();
 
-const TOTAL_SLOT = 250;
+const TOTAL_SLOT = 75;
 
 async function main() {
   const username = process.env.SEED_ADMIN_USERNAME ?? "admin";

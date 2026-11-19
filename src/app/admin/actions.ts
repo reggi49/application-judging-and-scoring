@@ -308,14 +308,19 @@ export async function createJuriAction(_p: ActionState, fd: FormData): Promise<A
 export async function updateJuriAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireAdmin();
   const id = Number(fd.get("id"));
-  const nama = z.string().trim().min(2).max(120).safeParse(fd.get("nama"));
-  if (!nama.success) return fail("Nama minimal 2 karakter.");
+  const nama = z.string().trim().min(2, "Nama juri minimal 2 karakter.").max(120).safeParse(fd.get("nama"));
+  if (!nama.success) return fail("Nama juri minimal 2 karakter.");
   const j = await db.juri.findFirst({ where: { id, deletedAt: null } });
   if (!j) return fail("Juri tidak ditemukan.");
   await db.juri.update({ where: { id }, data: { nama: nama.data } });
   await audit({ userId: admin.id, aksi: "UBAH_JURI", entitas: "juri", entitasId: id, dataLama: { nama: j.nama }, dataBaru: { nama: nama.data } });
   revalidatePath("/admin/juri");
-  return { ok: true, message: "Perubahan disimpan." };
+  revalidatePath("/login");
+  revalidatePath("/juri");
+  revalidatePath("/admin");
+  revalidatePath("/admin/nilai");
+  revalidatePath("/admin/berita-acara");
+  return { ok: true, message: `Nama juri ${j.kodeJuri} berhasil diubah menjadi "${nama.data}".` };
 }
 
 export async function toggleJuriAction(fd: FormData) {
