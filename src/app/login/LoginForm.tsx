@@ -29,7 +29,7 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
               : "text-[#ded7c8] hover:bg-panel hover:text-white"
           }`}
         >
-          🎖️ Dewan Juri
+          Dewan Juri
         </button>
         <button
           type="button"
@@ -40,7 +40,7 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
               : "text-[#ded7c8] hover:bg-panel hover:text-white"
           }`}
         >
-          ⚙️ Administrator
+          Administrator
         </button>
       </div>
 
@@ -90,7 +90,7 @@ export function LoginForm({ juriList }: { juriList: JuriOption[] }) {
                               : "bg-[#38332a] text-[#ded7c8]"
                           }`}
                         >
-                          {isSelected ? "✓ Terpilih" : "Pilih"}
+                          {isSelected ? "Terpilih" : "Pilih"}
                         </span>
                       </button>
                     );

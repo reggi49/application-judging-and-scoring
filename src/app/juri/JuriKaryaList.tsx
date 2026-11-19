@@ -189,8 +189,7 @@ export function JuriKaryaList({
       </div>
 
       {fase !== "PENJURIAN" && (
-        <div className="rounded-xl border-2 border-warn/70 bg-warn/15 px-4 py-3 text-sm font-bold text-warn flex items-center gap-2">
-          <span className="text-xl">⚠️</span>
+        <div className="rounded-xl border-2 border-warn/70 bg-warn/15 px-4 py-3 text-sm font-bold text-warn">
           <span>
             {fase === "PERSIAPAN"
               ? "Fase penjurian belum dibuka secara resmi oleh panitia."
@@ -205,7 +204,7 @@ export function JuriKaryaList({
           <div className="relative flex-1">
             <input
               className="input text-base font-semibold py-3 pl-3.5 pr-10 shadow-inner"
-              placeholder="🔍 Cari nomor slot (misal: 25) atau nama motor…"
+              placeholder="Cari nomor slot (misal: 25) atau nama motor…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -235,7 +234,6 @@ export function JuriKaryaList({
             className="btn btn-gold shrink-0 gap-1.5 px-3.5 sm:px-5 py-3 shadow-lg active:scale-95 transition-transform"
             title="Pindai QR Code pada unit motor peserta"
           >
-            <span className="text-xl">📷</span>
             <span className="font-extrabold text-sm sm:text-base">Scan QR</span>
           </button>
         </form>
@@ -285,7 +283,6 @@ export function JuriKaryaList({
       {/* 3. Daftar Kartu Karya — Desain Khusus Mobile & Desktop */}
       {filtered.length === 0 ? (
         <div className="card p-8 text-center">
-          <p className="text-3xl mb-2">🔍</p>
           <p className="text-base font-bold text-white">Tidak ada karya yang cocok</p>
           <p className="mt-1 text-xs text-[#ded7c8]">
             {q ? `Kata kunci "${q}" tidak ditemukan.` : "Tidak ada karya dalam filter ini."}
@@ -331,17 +328,17 @@ export function JuriKaryaList({
                     <div>
                       {isFinal && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-ok/70 bg-ok/20 px-2.5 py-1 text-xs font-black text-[#a3f7bf]">
-                          <span>✓</span> FINAL
+                          FINAL
                         </span>
                       )}
                       {isDraft && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-warn/70 bg-warn/20 px-2.5 py-1 text-xs font-black text-[#ffe28a]">
-                          <span>✎</span> DRAFT
+                          DRAFT
                         </span>
                       )}
                       {isBelum && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel2/80 px-2.5 py-1 text-xs font-bold text-[#ded7c8]">
-                          <span>○</span> BELUM
+                          BELUM
                         </span>
                       )}
                     </div>
@@ -361,7 +358,6 @@ export function JuriKaryaList({
                         />
                       ) : (
                         <div className="grid h-full place-items-center text-center p-1">
-                          <span className="text-xl">🏍️</span>
                           <span className="text-[10px] font-bold text-[#ded7c8]">Tanpa Foto</span>
                         </div>
                       )}
@@ -373,7 +369,7 @@ export function JuriKaryaList({
                         {it.nama}
                       </h2>
                       <p className="mt-1 text-xs font-semibold text-[#ded7c8] line-clamp-1">
-                        🏢 {it.peserta} <span className="text-gold-light font-bold">({it.kodePeserta})</span>
+                        {it.peserta} <span className="text-gold-light font-bold">({it.kodePeserta})</span>
                       </p>
 
                       <div className="mt-2">
@@ -412,19 +408,17 @@ export function JuriKaryaList({
                 <div className="mt-3.5 pt-2.5 border-t border-line/60">
                   {isBelum && (
                     <div className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-gold via-gold-light to-gold px-3 py-2 text-center text-xs font-black text-ink shadow-md group-hover:brightness-110">
-                      <span>⭐</span>
                       <span>Input Nilai Sekarang ➔</span>
                     </div>
                   )}
                   {isDraft && (
                     <div className="flex items-center justify-center gap-1.5 rounded-lg border border-gold-dark bg-[#362a16] px-3 py-2 text-center text-xs font-black text-gold-light group-hover:bg-gold group-hover:text-ink transition-colors">
-                      <span>✎</span>
                       <span>Lanjutkan Penilaian ➔</span>
                     </div>
                   )}
                   {isFinal && (
                     <div className="flex items-center justify-between rounded-lg bg-[#18261c] px-3 py-1.5 text-xs font-bold text-[#a3f7bf] border border-ok/30">
-                      <span>✓ Nilai Terkunci</span>
+                      <span>Nilai Terkunci</span>
                       <span className="text-gold-light font-extrabold">Lihat Detail ➔</span>
                     </div>
                   )}
@@ -508,7 +502,6 @@ export function JuriKaryaList({
         className="fixed bottom-5 right-4 z-30 sm:hidden flex items-center gap-2 rounded-full bg-gradient-to-r from-gold via-gold-light to-white text-ink px-5 py-3.5 shadow-2xl font-black text-sm tracking-wide border-2 border-[#1a1714] active:scale-95 transition-all duration-150"
         aria-label="Pindai QR Motor Peserta"
       >
-        <span className="text-xl">📷</span>
         <span>Scan QR</span>
       </button>
 

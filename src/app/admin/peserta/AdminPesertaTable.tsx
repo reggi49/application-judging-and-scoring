@@ -51,7 +51,7 @@ export function AdminPesertaTable({ items }: { items: AdminPesertaItem[] }) {
         <div className="flex flex-1 items-center gap-2 max-w-md w-full">
           <input
             className="input text-base py-2.5"
-            placeholder="🔍 Cari ID akronim / nama bengkel peserta…"
+            placeholder="Cari ID akronim / nama bengkel peserta…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />

@@ -260,7 +260,7 @@ function RankingTable({
                 <tr key={r.karyaId} className={rankCls}>
                   {showRank && (
                     <td className="num text-center font-title text-xl font-black">
-                      {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
+                      {r.peringkat}
                       {r.seri && <span className="block text-xs font-bold text-warn">SERI</span>}
                     </td>
                   )}
@@ -327,11 +327,11 @@ function RankingTable({
                       }`}
                     >
                       {isJuara1
-                        ? "🥇 Juara 1"
+                        ? "Juara 1"
                         : isJuara2
-                          ? "🥈 Juara 2"
+                          ? "Juara 2"
                           : isJuara3
-                            ? "🥉 Juara 3"
+                            ? "Juara 3"
                             : `#${r.peringkat}`}
                     </span>
                   )}

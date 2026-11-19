@@ -101,7 +101,6 @@ export function PwaInstallPrompt() {
             onClick={handleInstallClick}
             className="btn btn-gold w-full text-sm font-black py-2.5 shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
           >
-            <span className="text-lg">📲</span>
             <span>Pasang Aplikasi di HP (1-Klik)</span>
           </button>
         ) : (
@@ -110,14 +109,13 @@ export function PwaInstallPrompt() {
             onClick={() => setShowGuide(true)}
             className="btn btn-ghost w-full text-xs font-bold py-2 border border-gold/60 text-gold-light hover:bg-gold hover:text-ink transition-colors flex items-center justify-center gap-1.5 shadow"
           >
-            <span>{isIos ? "🍏" : "📱"}</span>
             <span>{isIos ? "Pasang di iPhone / iPad" : "Panduan Pasang di HP (Android / Pixel)"}</span>
           </button>
         )}
 
         {isHttpInsecure && !deferredPrompt && (
           <p className="text-[10px] text-gold-light/75 mt-1.5 leading-tight">
-            💡 <em>Untuk tombol 1-Klik otomatis, Chrome mewajibkan akses HTTPS (SSL).</em>
+            <em>Untuk tombol 1-Klik otomatis, Chrome mewajibkan akses HTTPS (SSL).</em>
           </p>
         )}
       </div>
@@ -134,14 +132,13 @@ export function PwaInstallPrompt() {
             className="card max-w-sm w-full p-5 text-center space-y-4 border-2 border-gold shadow-2xl overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-3xl">{isIos ? "🍏" : "📱"}</div>
             <h3 className="font-title text-base font-black text-gold-light">
               {isIos ? "Cara Pasang di iPhone / iPad" : "Cara Pasang di Android (Google Pixel / Lainnya)"}
             </h3>
 
             {isInAppBrowser && (
               <div className="bg-danger/15 border border-danger/40 rounded-lg p-2.5 text-xs text-danger text-left">
-                ⚠️ <strong>Browser In-App Terdeteksi:</strong> Buka tautan ini di browser utama (<strong>{isIos ? "Safari" : "Google Chrome"}</strong>) dengan menekan titik 3 lalu &quot;Buka di Browser&quot;.
+                <strong>Browser In-App Terdeteksi:</strong> Buka tautan ini di browser utama (<strong>{isIos ? "Safari" : "Google Chrome"}</strong>) dengan menekan titik 3 lalu &quot;Buka di Browser&quot;.
               </div>
             )}
 
@@ -198,7 +195,7 @@ export function PwaInstallPrompt() {
                 </p>
                 {isHttpInsecure && (
                   <div className="mt-2 p-2 rounded bg-gold/10 border border-gold/30 text-[11px] text-gold-light">
-                    🔒 <strong>Catatan Teknis:</strong> Jika menu &quot;Instal aplikasi&quot; belum ada, pastikan server diakses via <strong>HTTPS (SSL)</strong>. Google Chrome mewajibkan protokol HTTPS agar fitur instalasi aplikasi aktif penuh.
+                    <strong>Catatan Teknis:</strong> Jika menu &quot;Instal aplikasi&quot; belum ada, pastikan server diakses via <strong>HTTPS (SSL)</strong>. Google Chrome mewajibkan protokol HTTPS agar fitur instalasi aplikasi aktif penuh.
                   </div>
                 )}
               </div>

@@ -40,7 +40,7 @@ export default async function BeritaAcaraPage() {
             download
             className="btn btn-ghost btn-sm font-bold flex-1 sm:flex-none justify-center"
           >
-            ⬇ Unduh CSV / Excel
+            Unduh CSV / Excel
           </a>
           <PrintButton />
         </div>
@@ -86,8 +86,7 @@ export default async function BeritaAcaraPage() {
         <div className="my-6 grid gap-3 sm:gap-4 sm:grid-cols-3">
           {/* JUARA 1 */}
           <div className="rounded-xl border-2 border-gold bg-gradient-to-br from-gold/15 via-panel2 to-panel p-4 text-center print:border-black print:bg-gray-100 shadow-md">
-            <span className="text-3xl">🥇</span>
-            <div className="font-title gold-text text-lg sm:text-xl font-black print:text-black mt-1">
+            <div className="font-title gold-text text-lg sm:text-xl font-black print:text-black">
               JUARA I
             </div>
             <div className="text-[0.7rem] uppercase tracking-wider text-gold-light print:text-gray-600 font-bold">
@@ -115,8 +114,7 @@ export default async function BeritaAcaraPage() {
 
           {/* JUARA 2 */}
           <div className="rounded-xl border border-slate-400/60 bg-gradient-to-br from-slate-400/10 via-panel2 to-panel p-4 text-center print:border-black print:bg-gray-50 shadow-md">
-            <span className="text-3xl">🥈</span>
-            <div className="font-title text-lg sm:text-xl font-black text-slate-200 print:text-black mt-1">
+            <div className="font-title text-lg sm:text-xl font-black text-slate-200 print:text-black">
               JUARA II
             </div>
             <div className="text-[0.7rem] uppercase tracking-wider text-[#ded7c8] print:text-gray-600 font-bold">
@@ -144,8 +142,7 @@ export default async function BeritaAcaraPage() {
 
           {/* JUARA 3 */}
           <div className="rounded-xl border border-amber-700/60 bg-gradient-to-br from-amber-700/10 via-panel2 to-panel p-4 text-center print:border-black print:bg-gray-50 shadow-md">
-            <span className="text-3xl">🥉</span>
-            <div className="font-title text-lg sm:text-xl font-black text-amber-500 print:text-black mt-1">
+            <div className="font-title text-lg sm:text-xl font-black text-amber-500 print:text-black">
               JUARA III
             </div>
             <div className="text-[0.7rem] uppercase tracking-wider text-[#ded7c8] print:text-gray-600 font-bold">
@@ -213,7 +210,7 @@ export default async function BeritaAcaraPage() {
                                 : "bg-panel2 border border-line text-white"
                         }`}
                       >
-                        {isJuara1 ? "🥇 1" : isJuara2 ? "🥈 2" : isJuara3 ? "🥉 3" : `#${r.peringkat}`}
+                        {`#${r.peringkat}`}
                       </span>
 
                       <div>
@@ -308,7 +305,7 @@ export default async function BeritaAcaraPage() {
                       }
                     >
                       <td className="num text-center font-bold">
-                        {r.peringkat === 1 ? "🥇 1" : r.peringkat === 2 ? "🥈 2" : r.peringkat === 3 ? "🥉 3" : r.peringkat}
+                        {r.peringkat}
                         {r.seri && <span className="text-[0.65rem] block text-warn font-black">SERI</span>}
                       </td>
                       <td className="num font-black text-gold-light print:text-black tracking-wide">

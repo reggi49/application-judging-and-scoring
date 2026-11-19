@@ -72,7 +72,7 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
         <div className="flex flex-1 items-center gap-2 max-w-md w-full">
           <input
             className="input text-base py-2.5"
-            placeholder="🔍 Cari ID / nama karya / bengkel…"
+            placeholder="Cari ID / nama karya / bengkel…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -286,7 +286,7 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
               {/* Baris Bawah: Info Foto & Tombol Aksi HP */}
               <div className="flex items-center justify-between border-t border-line/60 pt-2.5">
                 <span className={`badge text-xs ${k.fotoCount > 0 ? "badge-gold" : "badge-warn"}`}>
-                  📷 {k.fotoCount}/5 foto
+                  {k.fotoCount}/5 foto
                 </span>
 
                 <div className="flex items-center gap-2">

@@ -69,7 +69,7 @@ export default async function AdminNilaiPage() {
         subtitle="Rincian seluruh nilai yang masuk dari dewan juri, detail per kriteria & bobot, status, serta kontrol unlock."
         actions={
           <Link href="/admin/nilai/input" className="btn btn-gold btn-sm">
-            ⚡ Input Nilai Pengganti (Fallback)
+            Input Nilai Pengganti (Fallback)
           </Link>
         }
       />

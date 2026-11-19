@@ -38,7 +38,7 @@ export function KriteriaForm({
     <form action={formAction} className="card max-w-3xl space-y-5 p-5 sm:p-6">
       {!canEdit && (
         <div className="rounded-lg border border-warn/50 bg-warn/10 p-3.5 text-sm text-warn">
-          🔒 {lockReason ?? "Kriteria terkunci dan tidak dapat diubah."}
+          {lockReason ?? "Kriteria terkunci dan tidak dapat diubah."}
         </div>
       )}
 
