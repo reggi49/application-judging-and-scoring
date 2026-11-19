@@ -78,7 +78,7 @@ export default async function AdminBackupPage() {
                         download
                         className="btn btn-ghost btn-sm text-xs"
                       >
-                        ⬇ Download
+                        Download
                       </a>
                     </td>
                   </tr>

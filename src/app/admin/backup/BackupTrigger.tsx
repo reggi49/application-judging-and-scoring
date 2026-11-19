@@ -18,7 +18,7 @@ export function BackupTrigger() {
         </div>
         <form action={formAction}>
           <SubmitButton className="btn btn-gold" pending="Membuat Backup…">
-            💾 Buat Backup Sekarang
+            Buat Backup Sekarang
           </SubmitButton>
         </form>
       </div>

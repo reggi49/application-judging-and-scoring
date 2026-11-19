@@ -383,7 +383,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                   : "border-line bg-panel text-cream hover:border-gold"
               }`}
             >
-              ⚙️ Pengaturan
+              Pengaturan
             </button>
             <button
               type="button"
@@ -392,7 +392,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
               className="inline-flex items-center justify-center rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-semibold text-cream hover:border-gold disabled:opacity-40 transition-colors"
               title="Print lewat browser / Simpan PDF"
             >
-              🖨️ PDF
+              Cetak PDF
             </button>
             <Link
               href="/admin/karya"
@@ -416,7 +416,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                   onClick={handleBtConnect}
                   className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-sky-400 disabled:opacity-50 transition-colors"
                 >
-                  {btBusy ? "⏳ Menghubungkan…" : "🔵 Hubungkan Printer Bluetooth"}
+                  {btBusy ? "Menghubungkan…" : "Hubungkan Printer Bluetooth"}
                 </button>
               ) : (
                 <div className="flex w-full sm:w-auto items-center justify-between gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs">
@@ -432,7 +432,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                       className="rounded px-1.5 py-0.5 text-xs text-cream/80 hover:bg-white/10"
                       title="Cek ulang status & ukuran rol"
                     >
-                      🔄
+                      Cek
                     </button>
                     <button
                       type="button"
@@ -488,7 +488,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                   className="inline-flex items-center justify-center rounded-lg border border-sky-500/50 bg-sky-500/10 px-3 py-2 text-xs font-bold text-sky-300 hover:bg-sky-500/20 disabled:opacity-50 transition-colors"
                   title="Coba cetak 1 stiker dulu untuk memastikan hasil rapi"
                 >
-                  ⚡ Tes 1 ({firstTestItem.kodeKarya})
+                  Tes 1 ({firstTestItem.kodeKarya})
                 </button>
               )}
               <button
@@ -500,8 +500,8 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                 }`}
               >
                 {btBusy && btPrintingKode == null
-                  ? "⏳ Mencetak…"
-                  : `🚀 Cetak (${selectedFilteredItems.length})`}
+                  ? "Mencetak…"
+                  : `Cetak (${selectedFilteredItems.length})`}
               </button>
             </div>
           </div>
@@ -569,14 +569,14 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                   onClick={handleCheckFiltered}
                   className="rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/25"
                 >
-                  ☑ Pilih Semua
+                  Pilih Semua
                 </button>
                 <button
                   type="button"
                   onClick={handleUncheckAll}
                   className="rounded-md bg-surface border border-line px-2.5 py-1 text-[11px] font-semibold text-muted hover:text-rose-300"
                 >
-                  ☐ Kosongkan
+                  Kosongkan
                 </button>
               </div>
               <span className="rounded-md bg-gold/15 px-2.5 py-1 text-[11px] font-bold text-gold">
@@ -612,7 +612,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
               )}
               {btError && (
                 <div className="rounded-lg bg-rose-500/15 border border-rose-500/40 px-2.5 py-1.5 text-[11px] text-rose-200">
-                  <b>⚠️</b> {btError}
+                  <b>Perhatian:</b> {btError}
                 </div>
               )}
             </div>
@@ -626,7 +626,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
               {/* Ukuran Rol */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-gold-light block">
-                  📏 Ukuran Kertas Rol:
+                  Ukuran Kertas Rol:
                 </label>
                 <select
                   value={presetKey}
@@ -675,7 +675,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
               <div className="space-y-2">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-gold-light block">
-                    🔥 Kepekatan Cetak:
+                    Kepekatan Cetak:
                   </label>
                   <select
                     value={btDensity}
@@ -785,7 +785,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
             </div>
 
             <p className="border-t border-line/50 pt-2 text-[11px] text-muted">
-              💡 <b>Cara pakai:</b> 1) Klik <b>Hubungkan Printer</b> → 2) Pilih <b>Logo RWSA</b> atau <b>MBtech Bulat</b> → 3) Klik kartu untuk centang nomor → 4) Klik <b>Tes 1</b> lalu <b>Cetak</b>.
+              <b>Cara pakai:</b> 1) Klik <b>Hubungkan Printer</b> → 2) Pilih <b>Logo RWSA</b> atau <b>MBtech Bulat</b> → 3) Klik kartu untuk centang nomor → 4) Klik <b>Tes 1</b> lalu <b>Cetak</b>.
             </p>
           </div>
         )}
@@ -860,15 +860,15 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                   className="flex-1 rounded-md bg-sky-500/20 border border-sky-500/35 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/30 disabled:opacity-50 transition-colors"
                   title={`Cetak Slot ${k.kodeKarya}`}
                 >
-                  {isPrintingThis ? "⏳…" : "🔵 Cetak"}
+                  {isPrintingThis ? "Mencetak…" : "Cetak"}
                 </button>
                 <a
                   href={downloadUrl}
                   download={`label-${k.kodeKarya}-${logoVariant}-${safeWMm}x${safeHMm}${rotate90 ? "-rot90" : ""}.png`}
-                  className="rounded-md bg-surface border border-line/60 px-2 py-1 text-[11px] text-gold hover:bg-gold/15 transition-colors"
+                  className="rounded-md bg-surface border border-line/60 px-2 py-1 text-[11px] font-semibold text-gold hover:bg-gold/15 transition-colors"
                   title="Unduh PNG"
                 >
-                  💾
+                  PNG
                 </a>
               </div>
             </div>

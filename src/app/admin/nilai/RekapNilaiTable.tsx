@@ -110,7 +110,7 @@ export function RekapNilaiTable({
         <div className="flex flex-1 items-center gap-2 max-w-md w-full">
           <input
             className="input text-base py-2.5"
-            placeholder="🔍 Cari ID karya / peserta / juri…"
+            placeholder="Cari ID karya / peserta / juri…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -285,7 +285,7 @@ export function RekapNilaiTable({
                                 className="btn btn-ghost btn-sm text-xs text-warn font-bold hover:bg-warn/20"
                                 confirm={`Buka kunci nilai ${r.kodeKarya} oleh juri ${r.kodeJuri}? Nilai akan kembali ke DRAFT.`}
                               >
-                                🔓 Buka Kunci
+                                Buka Kunci
                               </SubmitButton>
                             </form>
                           )}
@@ -462,7 +462,7 @@ export function RekapNilaiTable({
                           className="btn btn-ghost btn-sm text-xs text-warn font-bold"
                           confirm={`Buka kunci nilai ${r.kodeKarya} oleh juri ${r.kodeJuri}?`}
                         >
-                          🔓
+                          Buka Kunci
                         </SubmitButton>
                       </form>
                     )}

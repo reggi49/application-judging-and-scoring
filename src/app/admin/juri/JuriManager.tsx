@@ -82,7 +82,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
         <div className="flex flex-1 items-center gap-2 max-w-md w-full">
           <input
             className="input text-base py-2.5"
-            placeholder="🔍 Cari nama atau ID dewan juri…"
+            placeholder="Cari nama atau ID dewan juri…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -222,7 +222,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                             j.isActive ? "badge-ok" : "badge-bad"
                           }`}
                         >
-                          {j.isActive ? "✓ Aktif" : "✕ Nonaktif"}
+                          {j.isActive ? "Aktif" : "Nonaktif"}
                         </span>
                       </td>
                       <td className="num text-center">
@@ -236,7 +236,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                               onClick={() => setEditId(j.id)}
                               className="btn btn-outline btn-sm text-xs font-bold"
                             >
-                              ✎ Edit
+                              Edit
                             </button>
                           )}
 
@@ -305,7 +305,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                         j.isActive ? "badge-ok" : "badge-bad"
                       }`}
                     >
-                      {j.isActive ? "✓ Aktif" : "✕ Nonaktif"}
+                      {j.isActive ? "Aktif" : "Nonaktif"}
                     </span>
                   </div>
 
@@ -370,7 +370,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                         onClick={() => setEditId(j.id)}
                         className="btn btn-ghost btn-sm text-xs font-bold px-3"
                       >
-                        ✎ Edit
+                        Edit
                       </button>
                     )}
 

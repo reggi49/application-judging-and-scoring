@@ -545,7 +545,7 @@ export function PenilaianPanel(p: PanelProps) {
                   onClick={() => setIsEditingInfo(!isEditingInfo)}
                   className="btn btn-ghost btn-sm font-bold border border-gold/40 text-gold-light hover:bg-gold/20"
                 >
-                  {isEditingInfo ? "✕ Tutup" : deskripsi ? "✏️ Ubah Deskripsi" : "+ Tambah Deskripsi"}
+                  {isEditingInfo ? "Tutup" : deskripsi ? "Ubah Deskripsi" : "+ Tambah Deskripsi"}
                 </button>
               )}
             </div>
@@ -563,7 +563,7 @@ export function PenilaianPanel(p: PanelProps) {
                     Deskripsi Modifikasi Jok (Slot #{karya.kode})
                   </p>
                   <span className="rounded-full bg-ok/20 border border-ok/50 px-2 py-0.5 text-[10px] font-bold text-[#a3f7bf]">
-                    ✓ Berbagi ke semua juri
+                    Berbagi ke semua juri
                   </span>
                 </div>
                 <div>
@@ -576,7 +576,7 @@ export function PenilaianPanel(p: PanelProps) {
                     autoFocus
                   />
                   <p className="mt-1.5 text-[11px] text-[#ded7c8]">
-                    💡 Deskripsi ini otomatis tersimpan di server dan langsung terbaca oleh seluruh juri saat membuka slot #{karya.kode}.
+                    Deskripsi ini otomatis tersimpan di server dan langsung terbaca oleh seluruh juri saat membuka slot #{karya.kode}.
                   </p>
                 </div>
                 <div className="flex gap-2 justify-end pt-1">
@@ -604,7 +604,7 @@ export function PenilaianPanel(p: PanelProps) {
                     Deskripsi Modifikasi Jok
                   </span>
                   <span className="text-[11px] font-semibold text-ok flex items-center gap-1">
-                    <span>✓</span> Terbaca oleh semua juri
+                    Terbaca oleh semua juri
                   </span>
                 </div>
                 {deskripsi ? (
@@ -634,7 +634,7 @@ export function PenilaianPanel(p: PanelProps) {
           <div className="card mb-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <div>
-                <h3 className="font-title text-base font-bold text-white">📸 Foto Unit Motor</h3>
+                <h3 className="font-title text-base font-bold text-white">Foto Unit Motor</h3>
                 <p className="text-xs text-[#ded7c8]">{fotos.length}/5 foto terunggah (berbagi ke semua juri)</p>
               </div>
 
@@ -663,7 +663,6 @@ export function PenilaianPanel(p: PanelProps) {
                     className="btn btn-gold btn-sm gap-1.5 px-3 py-1.5 text-xs font-extrabold shadow-md active:scale-95"
                     title="Buka kamera smartphone untuk foto langsung"
                   >
-                    <span>📷</span>
                     <span>Kamera</span>
                   </button>
                   <button
@@ -673,7 +672,6 @@ export function PenilaianPanel(p: PanelProps) {
                     className="btn btn-ghost btn-sm gap-1 px-2.5 py-1.5 text-xs font-bold border border-gold/40 text-gold-light hover:bg-gold/20"
                     title="Pilih file dari galeri HP / laptop"
                   >
-                    <span>📁</span>
                     <span>Galeri</span>
                   </button>
                 </div>
@@ -682,7 +680,7 @@ export function PenilaianPanel(p: PanelProps) {
 
             {uploadingFoto && (
               <div className="mb-3 rounded-lg border border-gold/50 bg-gold/15 p-2.5 text-center text-xs font-bold text-white animate-pulse">
-                ⏳ Sedang mengompres & mengunggah foto ke server…
+                Sedang mengompres & mengunggah foto ke server…
               </div>
             )}
 
@@ -722,7 +720,6 @@ export function PenilaianPanel(p: PanelProps) {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-line/80 bg-panel2/40 p-6 text-center">
-                <span className="text-3xl block mb-2">📸</span>
                 <p className="text-sm font-bold text-white">Belum ada foto motor</p>
                 <p className="text-xs text-[#ded7c8] mt-1 max-w-xs mx-auto">
                   Gunakan tombol <strong>&quot;Kamera&quot;</strong> di atas untuk mengambil gambar jok motor langsung di venue acara.
@@ -738,7 +735,7 @@ export function PenilaianPanel(p: PanelProps) {
             <div className="mb-1 flex items-baseline justify-between gap-2">
               <h2 className="font-title text-xl font-bold text-gold-light">Lembar Penilaian</h2>
               <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 border border-ok/50 px-2.5 py-0.5 text-xs font-bold text-[#a3f7bf]">
-                🔒 Nilai Privat Juri
+                Nilai Privat Juri
               </span>
             </div>
             <p className="text-[11px] text-[#ded7c8] mb-3">
@@ -847,7 +844,7 @@ export function PenilaianPanel(p: PanelProps) {
           </div>
           {status === "FINAL" ? (
             <p className="text-sm font-bold text-ok bg-ok/15 border border-ok/50 px-4 py-2.5 rounded-lg">
-              ✓ Nilai final terkunci. Hubungi admin untuk membuka.
+              Nilai final terkunci. Hubungi admin untuk membuka.
             </p>
           ) : (
             <button

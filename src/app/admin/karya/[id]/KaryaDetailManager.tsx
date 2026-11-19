@@ -164,7 +164,7 @@ export function KaryaDetailManager({
                     uploading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  {uploading ? "Memproses & Mengompres Foto…" : "📷 Ambil Foto Kamera / Unggah Gambar"}
+                  {uploading ? "Memproses & Mengompres Foto…" : "Ambil Foto Kamera / Unggah Gambar"}
                 </label>
                 <p className="mt-1.5 text-center text-[0.7rem] text-muted">
                   Otomatis dikonversi ke WebP & dibuat thumbnail. Metadata GPS/EXIF dibersihkan.

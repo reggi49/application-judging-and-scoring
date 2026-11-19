@@ -37,7 +37,7 @@ export default async function KaryaIndexPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/admin/karya/label" className="btn btn-ghost btn-sm font-bold">
-              🏷️ Cetak Label Motor
+              Cetak Label Motor
             </Link>
             <Link href="/admin/karya/baru" className="btn btn-gold btn-sm font-bold">
               + Form Submit Karya
