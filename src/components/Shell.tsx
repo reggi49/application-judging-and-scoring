@@ -1,15 +1,17 @@
 import Link from "next/link";
-import { logoutAction } from "@/app/actions/auth";
+import { AppNavMenu } from "./AppNav";
 
 export function Emblem({ size = 44 }: { size?: number }) {
   return (
-    <span
-      aria-hidden
-      className="font-title gold-text inline-grid shrink-0 place-items-center rounded-full border border-gold-dark"
-      style={{ width: size, height: size, fontSize: size * 0.38 }}
-    >
-      RW
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/icons/ticon-512.png"
+      alt="MBtech Riding With Style Awards 2026"
+      width={size}
+      height={size}
+      className="shrink-0 rounded-lg object-contain"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -43,36 +45,13 @@ export function AppHeader({
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Brand href={home} compact />
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="badge badge-gold font-bold text-[11px] px-2 py-0.5 sm:hidden">
-            {roleLabel}
-          </span>
-          <div className="hidden text-right leading-tight sm:block">
+          <div className="hidden text-right leading-tight lg:block">
             <div className="text-base font-bold text-white">{userLabel}</div>
             <div className="text-xs font-bold uppercase tracking-wider text-gold-light">{roleLabel}</div>
           </div>
-          <form action={logoutAction}>
-            <button className="btn btn-ghost btn-sm font-semibold" type="submit">
-              Keluar
-            </button>
-          </form>
+          <AppNavMenu nav={nav} home={home} userLabel={userLabel} roleLabel={roleLabel} />
         </div>
       </div>
-      {nav.length > 0 && (
-        <nav aria-label="Navigasi utama" className="border-t border-line/80 bg-panel2/50">
-          <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none]">
-            {nav.map((n) => (
-              <li key={n.href} className="shrink-0">
-                <Link
-                  href={n.href}
-                  className="inline-flex min-h-10 items-center rounded-lg px-3.5 text-sm font-bold text-[#ded7c8] transition-colors hover:bg-gold/25 hover:text-white"
-                >
-                  {n.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
     </header>
   );
 }

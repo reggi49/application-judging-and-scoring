@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { Emblem } from "@/components/Shell";
 import { LoginForm } from "./LoginForm";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
@@ -24,7 +23,14 @@ export default async function LoginPage() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-8">
       <div className="mb-6 text-center">
         <div className="mb-3 flex justify-center">
-          <Emblem size={74} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/ticon-512.png"
+            alt="MBtech Riding With Style Awards 2026"
+            width={96}
+            height={96}
+            className="h-24 w-24 rounded-2xl object-contain"
+          />
         </div>
         <p className="text-[0.65rem] tracking-[0.35em] text-muted">MBTECH</p>
         <h1 className="font-title gold-text mt-0.5 text-2xl font-bold leading-tight sm:text-3xl">

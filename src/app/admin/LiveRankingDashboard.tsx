@@ -52,7 +52,7 @@ export function LiveRankingDashboard({
         <div>
           <p className="text-[0.7rem] uppercase tracking-[0.25em] text-muted">{eventNama}</p>
           <h1 className="font-title gold-text text-2xl font-bold sm:text-3xl">Ranking Live</h1>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-xs text-muted" suppressHydrationWarning>
             Sinkronisasi terakhir: {lastSync.toLocaleTimeString("id-ID")} · {loading ? "memuat…" : "siap"}
           </p>
         </div>
