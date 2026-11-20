@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Gallery } from "@/components/Gallery";
 import { loadDraft, removeDraft, saveDraft } from "@/lib/local-draft";
 import type { PenilaianState } from "@/lib/penilaian-types";
 import { formatScaled, formatSkor, isNilaiValid, SCALE, skorJuriScaled } from "@/lib/scoring";
@@ -51,7 +50,7 @@ function safeUUID(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     try {
       return crypto.randomUUID();
-    } catch {}
+    } catch { }
   }
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -81,21 +80,6 @@ export function PenilaianPanel(p: PanelProps) {
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
-  // Fitur Konsep Baru: Kelola Foto & Info Motor Slot
-  const [fotos, setFotos] = useState<{ id: number }[]>(karya.fotos);
-  const [namaKarya, setNamaKarya] = useState(karya.nama);
-  const [namaPeserta, setNamaPeserta] = useState(karya.peserta);
-  const [deskripsi, setDeskripsi] = useState(karya.deskripsi || "");
-  const [isEditingInfo, setIsEditingInfo] = useState(false);
-  const [savingInfo, setSavingInfo] = useState(false);
-  const [infoNotice, setInfoNotice] = useState<string | null>(null);
-
-  const [uploadingFoto, setUploadingFoto] = useState(false);
-  const [fotoNotice, setFotoNotice] = useState<string | null>(null);
-
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const dialogRef = useRef<HTMLDialogElement>(null);
   const uuidRef = useRef<string>(p.initial?.clientUuid || safeUUID());
   const tsRef = useRef<number>(p.initial?.clientUpdatedAt ?? 0);
@@ -106,7 +90,7 @@ export function PenilaianPanel(p: PanelProps) {
   const syncingRef = useRef(false);
   const failRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const syncNowRef = useRef<() => void>(() => {});
+  const syncNowRef = useRef<() => void>(() => { });
 
   valuesRef.current = values;
   catatanRef.current = catatan;
@@ -400,98 +384,10 @@ export function PenilaianPanel(p: PanelProps) {
     }
   };
 
-  const saveInfo = async () => {
-    if (!karya.id) return;
-    setSavingInfo(true);
-    setInfoNotice(null);
-    try {
-      const res = await fetch(`/api/admin/karya/${karya.id}/foto`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deskripsi: deskripsi.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menyimpan deskripsi");
-      setInfoNotice("✓ Deskripsi berhasil disimpan (berbagi ke seluruh juri)");
-      setIsEditingInfo(false);
-      setTimeout(() => setInfoNotice(null), 3500);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyimpan";
-      setInfoNotice(`✕ ${msg}`);
-    } finally {
-      setSavingInfo(false);
-    }
-  };
-
-  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!karya.id || !e.target.files || e.target.files.length === 0) return;
-    const files = Array.from(e.target.files);
-    e.target.value = "";
-    setUploadingFoto(true);
-    setFotoNotice(null);
-
-    let successCount = 0;
-    let errMsg = "";
-    for (const file of files) {
-      if (fotos.length + successCount >= 5) {
-        errMsg = "Maksimal 5 foto per motor.";
-        break;
-      }
-      const formData = new FormData();
-      formData.append("file", file);
-      try {
-        const res = await fetch(`/api/admin/karya/${karya.id}/foto`, {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          successCount++;
-          setFotos((prev) => [...prev, { id: data.id }]);
-        } else {
-          errMsg = data.error || "Gagal mengunggah foto.";
-          break;
-        }
-      } catch {
-        errMsg = "Gagal menghubungi server saat upload.";
-        break;
-      }
-    }
-
-    setUploadingFoto(false);
-    if (errMsg) {
-      setFotoNotice(`✕ ${errMsg}`);
-    } else if (successCount > 0) {
-      setFotoNotice(`✓ Berhasil menambahkan ${successCount} foto.`);
-      setTimeout(() => setFotoNotice(null), 3500);
-    }
-  };
-
-  const handleDeleteFoto = async (fotoId: number) => {
-    if (!karya.id) return;
-    if (!confirm("Hapus foto ini?")) return;
-    setFotoNotice(null);
-    try {
-      const res = await fetch(`/api/admin/karya/${karya.id}/foto?fotoId=${fotoId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menghapus foto");
-      setFotos((prev) => prev.filter((f) => f.id !== fotoId));
-      setFotoNotice("✓ Foto berhasil dihapus.");
-      setTimeout(() => setFotoNotice(null), 3500);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menghapus foto";
-      setFotoNotice(`✕ ${msg}`);
-    }
-  };
-
   const syncBadge = status === "FINAL" ? { text: "FINAL · terkunci", cls: "badge-ok" } : SYNC_LABEL[sync];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-40 pt-4 md:pb-10">
+    <div className="mx-auto max-w-2xl px-4 pb-40 pt-4 md:pb-10">
       {/* Header karya — ID besar agar tidak salah karya */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <Link href={p.backHref} className="btn btn-ghost btn-sm">
@@ -527,317 +423,123 @@ export function PenilaianPanel(p: PanelProps) {
         </p>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2 md:items-start lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        {/* Kolom kiri: identitas + pengelola info + galeri foto */}
-        <section aria-labelledby="judul-karya">
-          {/* Card 1: Identitas Slot & Deskripsi Modifikasi Jok (Berbagi ke Seluruh Juri) */}
-          <div className="card mb-4 p-5">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-gold-light">Nomor Slot Peserta</p>
-                <h1 id="judul-karya" className="font-title gold-text num text-4xl font-black leading-tight sm:text-5xl tracking-wider mt-0.5">
-                  #{karya.kode}
-                </h1>
+      <section aria-labelledby="judul-karya">
+        <div className="card p-5">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-title text-xl font-bold text-gold-light">Lembar Penilaian</h2>
+                <span className="inline-flex items-center rounded-full bg-ok/20 border border-ok/50 px-2.5 py-0.5 text-[11px] font-bold text-[#a3f7bf]">
+                  Nilai Privat Juri
+                </span>
               </div>
-              {karya.id && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingInfo(!isEditingInfo)}
-                  className="btn btn-ghost btn-sm font-bold border border-gold/40 text-gold-light hover:bg-gold/20"
-                >
-                  {isEditingInfo ? "Tutup" : deskripsi ? "Ubah Deskripsi" : "+ Tambah Deskripsi"}
-                </button>
-              )}
+              <p className="mt-1 text-[11px] text-[#ded7c8]">
+                Skala 0–100. Nilai yang Anda input tersimpan rahasia & <strong>tidak dapat dilihat oleh juri lain</strong>.
+              </p>
             </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-light">Nomor Peserta</p>
+              <h1 id="judul-karya" className="font-title gold-text num text-3xl font-black leading-none sm:text-4xl tracking-wider mt-0.5">
+                #{karya.kode}
+              </h1>
+            </div>
+          </div>
+          <hr className="hairline mb-4" />
 
-            {infoNotice && (
-              <div className={`mt-3 rounded-lg px-3 py-2 text-xs font-bold ${infoNotice.startsWith("✓") ? "bg-ok/20 border border-ok/60 text-ok" : "bg-danger/20 border border-danger/60 text-white"}`}>
-                {infoNotice}
-              </div>
-            )}
-
-            {isEditingInfo ? (
-              <div className="mt-4 space-y-3 rounded-xl border border-gold/40 bg-panel2 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold text-gold-light uppercase tracking-wider">
-                    Deskripsi Modifikasi Jok (Slot #{karya.kode})
-                  </p>
-                  <span className="rounded-full bg-ok/20 border border-ok/50 px-2 py-0.5 text-[10px] font-bold text-[#a3f7bf]">
-                    Berbagi ke semua juri
-                  </span>
-                </div>
-                <div>
-                  <textarea
-                    rows={4}
-                    className="input text-sm font-semibold w-full leading-relaxed p-3 shadow-inner"
-                    value={deskripsi}
-                    onChange={(e) => setDeskripsi(e.target.value)}
-                    placeholder="Bahan MBtech Giorgio & Carrera, motif diamond stitch, benang merah, busa latex custom..."
-                    autoFocus
-                  />
-                  <p className="mt-1.5 text-[11px] text-[#ded7c8]">
-                    Deskripsi ini otomatis tersimpan di server dan langsung terbaca oleh seluruh juri saat membuka slot #{karya.kode}.
-                  </p>
-                </div>
-                <div className="flex gap-2 justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingInfo(false)}
-                    className="btn btn-ghost btn-sm text-xs font-bold"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveInfo}
-                    disabled={savingInfo}
-                    className="btn btn-gold btn-sm text-xs font-extrabold shadow-md"
-                  >
-                    {savingInfo ? "Menyimpan…" : "Simpan Deskripsi"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gold-light">
-                    Deskripsi Modifikasi Jok
-                  </span>
-                  <span className="text-[11px] font-semibold text-ok flex items-center gap-1">
-                    Terbaca oleh semua juri
-                  </span>
-                </div>
-                {deskripsi ? (
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-white bg-panel2/80 p-3.5 rounded-xl border border-line shadow-inner">
-                    {deskripsi}
-                  </p>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-gold/40 bg-gold/10 p-4 text-center">
-                    <p className="text-xs font-bold text-white mb-1">Deskripsi modifikasi jok belum diisi</p>
-                    <p className="text-[11px] text-[#ded7c8] mb-3">
-                      Tekan tombol di bawah untuk mengisi spesifikasi bahan & modifikasi jok slot ini.
-                    </p>
+          <ul className="space-y-4">
+            {kriteria.map((k) => {
+              const raw = values[k.kode];
+              const n = raw === "" ? null : Number(raw);
+              const poin = n === null ? null : formatScaled(n * k.bobotBp, SCALE, 2);
+              return (
+                <li key={k.id} className="rounded-xl border border-line bg-panel2/70 p-3.5 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <label htmlFor={`n-${k.kode}`} className="min-w-0 flex-1">
+                      <span className="block text-base font-bold text-white">{k.nama}</span>
+                      {k.deskripsi && <span className="mt-1 block text-xs leading-snug text-[#ded7c8]">{k.deskripsi}</span>}
+                    </label>
+                    <span className="badge badge-gold shrink-0 text-xs">Bobot {k.bobotBp / 100}%</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setIsEditingInfo(true)}
-                      className="btn btn-gold btn-sm text-xs font-bold shadow-md"
+                      className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
+                      onClick={() => step(k.kode, -5)}
+                      disabled={!canEdit}
+                      aria-label={`Kurangi 5 poin nilai ${k.nama}`}
+                      title="Kurangi 5 poin"
                     >
-                      + Tambah Deskripsi Modifikasi
+                      −
+                    </button>
+                    <input
+                      id={`n-${k.kode}`}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      className="input num text-center text-3xl font-extrabold h-14 bg-[#1f1d18] border-2 border-gold-dark/80 text-white shadow-inner"
+                      placeholder="0–100"
+                      value={raw}
+                      readOnly={!canEdit}
+                      onChange={(e) => setNilai(k.kode, e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
+                      aria-describedby={`poin-${k.kode}`}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
+                      onClick={() => step(k.kode, 5)}
+                      disabled={!canEdit}
+                      aria-label={`Tambah 5 poin nilai ${k.nama}`}
+                      title="Tambah 5 poin"
+                    >
+                      +
                     </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                  <p id={`poin-${k.kode}`} className="num mt-2 text-right text-xs font-bold text-gold-light">
+                    {poin === null ? "— belum diisi" : `${n} × ${k.bobotBp / 100}% = ${poin} poin`}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
 
-          {/* Card 2: Pengelola & Galeri Foto */}
-          <div className="card mb-4 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <div>
-                <h3 className="font-title text-base font-bold text-white">Foto Unit Motor</h3>
-                <p className="text-xs text-[#ded7c8]">{fotos.length}/5 foto terunggah (berbagi ke semua juri)</p>
-              </div>
-
-              {karya.id && fotos.length < 5 && (
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={handleFotoUpload}
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleFotoUpload}
-                  />
-                  <button
-                    type="button"
-                    disabled={uploadingFoto}
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="btn btn-gold btn-sm gap-1.5 px-3 py-1.5 text-xs font-extrabold shadow-md active:scale-95"
-                    title="Buka kamera smartphone untuk foto langsung"
-                  >
-                    <span>Kamera</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={uploadingFoto}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn btn-ghost btn-sm gap-1 px-2.5 py-1.5 text-xs font-bold border border-gold/40 text-gold-light hover:bg-gold/20"
-                    title="Pilih file dari galeri HP / laptop"
-                  >
-                    <span>Galeri</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {uploadingFoto && (
-              <div className="mb-3 rounded-lg border border-gold/50 bg-gold/15 p-2.5 text-center text-xs font-bold text-white animate-pulse">
-                Sedang mengompres & mengunggah foto ke server…
-              </div>
-            )}
-
-            {fotoNotice && (
-              <div className={`mb-3 rounded-lg px-3 py-2 text-xs font-bold ${fotoNotice.startsWith("✓") ? "bg-ok/20 border border-ok/60 text-ok" : "bg-danger/20 border border-danger/60 text-white"}`}>
-                {fotoNotice}
-              </div>
-            )}
-
-            {fotos.length > 0 ? (
-              <div>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 mb-3">
-                  {fotos.map((f, idx) => (
-                    <div key={f.id} className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-line bg-panel2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/api/foto/${f.id}?t=1`}
-                        alt={`Foto motor #${karya.kode} ke-${idx + 1}`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                      {karya.id && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFoto(f.id)}
-                          className="absolute right-1.5 top-1.5 rounded-full bg-black/80 p-1.5 text-xs text-danger shadow-md hover:bg-danger hover:text-white transition-colors"
-                          title="Hapus foto ini"
-                          aria-label="Hapus foto"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <Gallery fotos={fotos} alt={namaKarya} />
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-line/80 bg-panel2/40 p-6 text-center">
-                <p className="text-sm font-bold text-white">Belum ada foto motor</p>
-                <p className="text-xs text-[#ded7c8] mt-1 max-w-xs mx-auto">
-                  Gunakan tombol <strong>&quot;Kamera&quot;</strong> di atas untuk mengambil gambar jok motor langsung di venue acara.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Kolom kanan: form nilai */}
-        <section aria-label="Form penilaian" className="md:sticky md:top-28">
-          <div className="card p-5">
-            <div className="mb-1 flex items-baseline justify-between gap-2">
-              <h2 className="font-title text-xl font-bold text-gold-light">Lembar Penilaian</h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 border border-ok/50 px-2.5 py-0.5 text-xs font-bold text-[#a3f7bf]">
-                Nilai Privat Juri
-              </span>
-            </div>
-            <p className="text-[11px] text-[#ded7c8] mb-3">
-              Skala 0–100. Nilai yang Anda input tersimpan rahasia & <strong>tidak dapat dilihat oleh juri lain</strong>.
+          {hint && (
+            <p role="alert" className="mt-3 text-sm font-bold text-warn">
+              {hint}
             </p>
-            <hr className="hairline mb-4" />
+          )}
 
-            <ul className="space-y-4">
-              {kriteria.map((k) => {
-                const raw = values[k.kode];
-                const n = raw === "" ? null : Number(raw);
-                const poin = n === null ? null : formatScaled(n * k.bobotBp, SCALE, 2);
-                return (
-                  <li key={k.id} className="rounded-xl border border-line bg-panel2/70 p-3.5 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <label htmlFor={`n-${k.kode}`} className="min-w-0 flex-1">
-                        <span className="block text-base font-bold text-white">{k.nama}</span>
-                        {k.deskripsi && <span className="mt-1 block text-xs leading-snug text-[#ded7c8]">{k.deskripsi}</span>}
-                      </label>
-                      <span className="badge badge-gold shrink-0 text-xs">Bobot {k.bobotBp / 100}%</span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
-                        onClick={() => step(k.kode, -5)}
-                        disabled={!canEdit}
-                        aria-label={`Kurangi 5 poin nilai ${k.nama}`}
-                        title="Kurangi 5 poin"
-                      >
-                        −
-                      </button>
-                      <input
-                        id={`n-${k.kode}`}
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        autoComplete="off"
-                        className="input num text-center text-3xl font-extrabold h-14 bg-[#1f1d18] border-2 border-gold-dark/80 text-white shadow-inner"
-                        placeholder="0–100"
-                        value={raw}
-                        readOnly={!canEdit}
-                        onChange={(e) => setNilai(k.kode, e.target.value)}
-                        onFocus={(e) => e.currentTarget.select()}
-                        aria-describedby={`poin-${k.kode}`}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-ghost w-14 h-14 shrink-0 text-2xl font-black bg-[#332e27] border-2 border-gold-dark/80 text-gold-light hover:bg-gold hover:text-ink shadow-sm"
-                        onClick={() => step(k.kode, 5)}
-                        disabled={!canEdit}
-                        aria-label={`Tambah 5 poin nilai ${k.nama}`}
-                        title="Tambah 5 poin"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <p id={`poin-${k.kode}`} className="num mt-2 text-right text-xs font-bold text-gold-light">
-                      {poin === null ? "— belum diisi" : `${n} × ${k.bobotBp / 100}% = ${poin} poin`}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {hint && (
-              <p role="alert" className="mt-3 text-sm font-bold text-warn">
-                {hint}
-              </p>
-            )}
-
-            <div className="mt-5">
-              <label htmlFor="catatan" className="label">
-                Catatan Juri (opsional)
-              </label>
-              <textarea
-                id="catatan"
-                rows={3}
-                maxLength={2000}
-                className="input font-medium"
-                value={catatan}
-                readOnly={!canEdit}
-                onChange={(e) => onCatatan(e.target.value)}
-                placeholder="Tuliskan catatan atau masukan untuk karya ini…"
-              />
-            </div>
-
-            <div className="mt-5 flex items-center justify-between rounded-xl border-2 border-gold bg-gold/15 px-4 py-3.5 shadow-md">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">Skor Akhir Anda</p>
-                <p className="text-xs font-semibold text-white mt-0.5">
-                  {live.filled}/{kriteria.length} kriteria terisi
-                </p>
-              </div>
-              <p className="num gold-text font-title text-4xl sm:text-5xl font-black">{displayTotal ?? "—"}</p>
-            </div>
+          <div className="mt-5">
+            <label htmlFor="catatan" className="label">
+              Catatan Juri (opsional)
+            </label>
+            <textarea
+              id="catatan"
+              rows={3}
+              maxLength={2000}
+              className="input font-medium"
+              value={catatan}
+              readOnly={!canEdit}
+              onChange={(e) => onCatatan(e.target.value)}
+              placeholder="Tuliskan catatan atau masukan untuk karya ini…"
+            />
           </div>
-        </section>
-      </div>
+
+          <div className="mt-5 flex items-center justify-between rounded-xl border-2 border-gold bg-gold/15 px-4 py-3.5 shadow-md">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">Skor Akhir Anda</p>
+              <p className="text-xs font-semibold text-white mt-0.5">
+                {live.filled}/{kriteria.length} kriteria terisi
+              </p>
+            </div>
+            <p className="num gold-text font-title text-4xl sm:text-5xl font-black">{displayTotal ?? "—"}</p>
+          </div>
+        </div>
+      </section>
 
       {/* Bilah aksi (menempel di bawah untuk smartphone) */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t-2 border-line bg-panel/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md shadow-2xl md:static md:mt-5 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 md:justify-end">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 md:justify-end">
           <div className="min-w-0 flex-1 md:hidden">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">Skor Anda</p>
             <p className="num gold-text font-title text-3xl font-black leading-none">{displayTotal ?? "—"}</p>
