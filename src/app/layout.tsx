@@ -41,8 +41,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${inter.variable} ${cinzel.variable}`}>
-      <body className="antialiased">
+    <html lang="id" className={`${inter.variable} ${cinzel.variable}`} suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         {children}
         <PwaRegister />
       </body>
