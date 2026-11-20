@@ -310,17 +310,53 @@ export async function updateJuriAction(_p: ActionState, fd: FormData): Promise<A
   const id = Number(fd.get("id"));
   const nama = z.string().trim().min(2, "Nama juri minimal 2 karakter.").max(120).safeParse(fd.get("nama"));
   if (!nama.success) return fail("Nama juri minimal 2 karakter.");
+
+  const rawKode = fd.get("kodeJuri");
+  const hasKode = typeof rawKode === "string" && rawKode.trim().length > 0;
+  const kodeParsed = hasKode
+    ? z
+        .string()
+        .trim()
+        .toUpperCase()
+        .regex(/^[A-Z0-9_-]{2,20}$/, "ID Juri 2–20 karakter (huruf/angka/-/_).")
+        .safeParse(rawKode)
+    : null;
+  if (kodeParsed && !kodeParsed.success) return fail(firstIssue(kodeParsed.error));
+
   const j = await db.juri.findFirst({ where: { id, deletedAt: null } });
   if (!j) return fail("Juri tidak ditemukan.");
-  await db.juri.update({ where: { id }, data: { nama: nama.data } });
-  await audit({ userId: admin.id, aksi: "UBAH_JURI", entitas: "juri", entitasId: id, dataLama: { nama: j.nama }, dataBaru: { nama: nama.data } });
+
+  const nextKode = kodeParsed ? kodeParsed.data : j.kodeJuri;
+  try {
+    await db.juri.update({
+      where: { id },
+      data: { nama: nama.data, kodeJuri: nextKode },
+    });
+  } catch (e) {
+    if (isUnique(e, "kode_juri") || isUnique(e)) {
+      return fail(`ID Juri "${nextKode}" sudah dipakai juri lain.`);
+    }
+    throw e;
+  }
+
+  await audit({
+    userId: admin.id,
+    aksi: "UBAH_JURI",
+    entitas: "juri",
+    entitasId: id,
+    dataLama: { kodeJuri: j.kodeJuri, nama: j.nama },
+    dataBaru: { kodeJuri: nextKode, nama: nama.data },
+  });
   revalidatePath("/admin/juri");
   revalidatePath("/login");
   revalidatePath("/juri");
   revalidatePath("/admin");
   revalidatePath("/admin/nilai");
   revalidatePath("/admin/berita-acara");
-  return { ok: true, message: `Nama juri ${j.kodeJuri} berhasil diubah menjadi "${nama.data}".` };
+  return {
+    ok: true,
+    message: `Data juri ${nextKode} berhasil diperbarui (${nama.data}).`,
+  };
 }
 
 export async function toggleJuriAction(fd: FormData) {
