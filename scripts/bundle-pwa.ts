@@ -13,9 +13,21 @@ function log(msg: string) {
 }
 
 async function run() {
-  log("0. Membersihkan folder staging lama...");
+  log("0. Membersihkan folder staging lama & memperbarui versi Service Worker...");
   if (fs.existsSync(BUNDLE_DIR)) {
     fs.rmSync(BUNDLE_DIR, { recursive: true, force: true });
+  }
+
+  // Bump versi Service Worker otomatis agar PWA yang sudah terpasang otomatis update
+  const swPath = path.join(ROOT, "public/sw.js");
+  if (fs.existsSync(swPath)) {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const newVersion = `rwsa-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const swContent = fs.readFileSync(swPath, "utf8");
+    const updatedSw = swContent.replace(/^const VERSION = ".*?";/m, `const VERSION = "${newVersion}";`);
+    fs.writeFileSync(swPath, updatedSw, "utf8");
+    log(`   🔄 Versi Service Worker diperbarui ke: ${newVersion}`);
   }
 
   log("1. Memulai build Next.js PWA (Standalone)...");

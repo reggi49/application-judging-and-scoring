@@ -21,6 +21,9 @@ export function PwaRegister() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
+    let onControllerChange: (() => void) | undefined;
+    let onVisibilityChange: (() => void) | undefined;
+
     if ("serviceWorker" in navigator) {
       // Hanya daftarkan di HTTPS atau localhost
       const isLocalhost =
@@ -29,8 +32,28 @@ export function PwaRegister() {
       const isHttps = window.location.protocol === "https:";
 
       if (isHttps || isLocalhost) {
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        let refreshing = false;
+
+        // Jika Service Worker baru mengambil alih (update), reload halaman otomatis
+        onControllerChange = () => {
+          if (!hadController || refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
         navigator.serviceWorker
           .register("/sw.js", { scope: "/", updateViaCache: "none" })
+          .then((reg) => {
+            reg.update().catch(() => {});
+            onVisibilityChange = () => {
+              if (document.visibilityState === "visible") {
+                reg.update().catch(() => {});
+              }
+            };
+            document.addEventListener("visibilitychange", onVisibilityChange);
+          })
           .catch((err) => {
             console.warn("Gagal mendaftarkan Service Worker:", err);
           });
@@ -39,6 +62,12 @@ export function PwaRegister() {
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      if (onControllerChange && "serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      }
+      if (onVisibilityChange) {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
     };
   }, []);
 
