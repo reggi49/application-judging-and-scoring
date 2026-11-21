@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppNavMenu } from "./AppNav";
+import { AdminBrandReset } from "./AdminBrandReset";
 
 export function Emblem({ size = 44 }: { size?: number }) {
   return (
@@ -34,16 +35,18 @@ export function AppHeader({
   userLabel,
   roleLabel,
   home,
+  enableSecretReset = false,
 }: {
   nav: NavItem[];
   userLabel: string;
   roleLabel: string;
   home: string;
+  enableSecretReset?: boolean;
 }) {
   return (
     <header className="no-print sticky top-0 z-30 border-b-2 border-line bg-panel/95 backdrop-blur-md shadow-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <Brand href={home} compact />
+        {enableSecretReset ? <AdminBrandReset href={home} compact /> : <Brand href={home} compact />}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden text-right leading-tight lg:block">
             <div className="text-base font-bold text-white">{userLabel}</div>

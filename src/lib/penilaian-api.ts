@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { savePenilaian, type SaveResult } from "./penilaian";
+import { reopenPenilaian, savePenilaian, type SaveResult } from "./penilaian";
 import { audit } from "./audit";
 
 export const penilaianBody = z.object({
@@ -73,5 +73,49 @@ export async function processPenilaianRequest(
     });
   }
   return resultToResponse(result);
+}
+
+const reopenBody = z.object({
+  kodeKarya: z.string().regex(/^[A-Za-z0-9_-]{1,20}$/, "Kode karya / nomor peserta tidak valid."),
+});
+
+/** Membuka kembali nilai FINAL menjadi DRAFT agar juri/admin dapat mengoreksi nilai. */
+export async function processReopenRequest(
+  req: Request,
+  ctx: { juriId: number; actorUserId: number; oleh: "JURI" | "ADMIN" },
+) {
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, code: "VALIDASI", message: "Body bukan JSON." }, { status: 400 });
+  }
+  const parsed = reopenBody.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, code: "VALIDASI", message: parsed.error.issues[0]?.message ?? "Input tidak valid." },
+      { status: 422 },
+    );
+  }
+
+  const result = await reopenPenilaian({
+    juriId: ctx.juriId,
+    kodeKarya: parsed.data.kodeKarya,
+    actorUserId: ctx.actorUserId,
+  });
+
+  if (!result.ok) {
+    const codeMap: Record<string, number> = { FASE: 409, JURI: 403, KARYA: 404, NOT_FOUND: 404 };
+    return NextResponse.json(result, { status: codeMap[result.code] ?? 400 });
+  }
+
+  await audit({
+    userId: ctx.actorUserId,
+    aksi: ctx.oleh === "ADMIN" ? "ADMIN_KOREKSI_NILAI" : "KOREKSI_NILAI",
+    entitas: "penilaian",
+    entitasId: result.state.id,
+    dataBaru: { juriId: ctx.juriId, kodeKarya: parsed.data.kodeKarya },
+  });
+  return NextResponse.json(result);
 }
 

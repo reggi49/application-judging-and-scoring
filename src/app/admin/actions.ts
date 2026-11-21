@@ -14,7 +14,7 @@ import { formatKodeKarya, isAkronimValid, normalizeAkronim } from "@/lib/kode";
 import { isBobotValid, persenToBp, totalBobotBp } from "@/lib/scoring";
 import { removeStoredImage } from "@/lib/images";
 import { unlockPenilaian } from "@/lib/penilaian";
-import { runBackup } from "@/lib/backup";
+import { restoreDatabaseBackup, runBackup, sanitizeBackupTag } from "@/lib/backup";
 import type { ActionState } from "@/lib/action-state";
 
 const fail = (error: string): ActionState => ({ error });
@@ -30,7 +30,7 @@ function isUnique(e: unknown, field?: string) {
 
 function genPassword(): string {
   const alpha = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  for (;;) {
+  for (; ;) {
     let p = "";
     for (let i = 0; i < 10; i++) p += alpha[randomInt(alpha.length)];
     if (!validatePasswordStrength(p)) return p;
@@ -129,6 +129,123 @@ export async function deletePesertaAction(fd: FormData) {
   await audit({ userId: admin.id, aksi: "HAPUS_PESERTA", entitas: "peserta", entitasId: id, dataLama: p });
   revalidatePath("/admin/peserta");
   redirect("/admin/peserta");
+}
+
+const syncTotalSchema = z.object({
+  total: z.coerce.number().int().min(1, "Minimal 1 peserta.").max(250, "Maksimal 250 peserta."),
+});
+
+/** Menyesuaikan jumlah slot peserta & karya (001..N) secara instan. */
+export async function syncTotalPesertaAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  const r = syncTotalSchema.safeParse({ total: fd.get("total") });
+  if (!r.success) return fail(firstIssue(r.error));
+
+  const target = r.data.total;
+  const now = new Date();
+  let createdOrRestored = 0;
+  let hiddenCount = 0;
+  const protectedKodes: string[] = [];
+
+  await db.$transaction(async (tx) => {
+    // 1. Pastikan slot 001..target aktif (buat baru atau pulihkan yang pernah dinonaktifkan)
+    for (let i = 1; i <= target; i++) {
+      const nomorStr = String(i).padStart(3, "0");
+      let peserta = await tx.peserta.findUnique({ where: { kodePeserta: nomorStr } });
+      if (!peserta) {
+        peserta = await tx.peserta.create({
+          data: {
+            kodePeserta: nomorStr,
+            nama: `Peserta #${nomorStr}`,
+            karyaCounter: 1,
+          },
+        });
+        createdOrRestored++;
+      } else if (peserta.deletedAt !== null) {
+        peserta = await tx.peserta.update({
+          where: { id: peserta.id },
+          data: { deletedAt: null },
+        });
+        createdOrRestored++;
+      }
+
+      const karya = await tx.karya.findUnique({ where: { kodeKarya: nomorStr } });
+      if (!karya) {
+        await tx.karya.create({
+          data: {
+            pesertaId: peserta.id,
+            akronimKarya: "RW",
+            noUrut: 1,
+            kodeKarya: nomorStr,
+            namaKarya: `Nomor ${nomorStr}`,
+            deskripsi: null,
+          },
+        });
+      } else if (karya.deletedAt !== null) {
+        await tx.karya.update({
+          where: { id: karya.id },
+          data: { deletedAt: null },
+        });
+      }
+    }
+
+    // 2. Nonaktifkan slot bernomor di atas target (kecuali yang sudah memiliki penilaian)
+    const activePeserta = await tx.peserta.findMany({
+      where: { deletedAt: null },
+      include: {
+        karya: {
+          where: { deletedAt: null },
+          include: { _count: { select: { penilaian: true } } },
+        },
+      },
+    });
+
+    for (const p of activePeserta) {
+      if (!/^\d{3}$/.test(p.kodePeserta)) continue;
+      const num = parseInt(p.kodePeserta, 10);
+      if (num <= target) continue;
+
+      const hasScores = p.karya.some((k) => k._count.penilaian > 0);
+      if (hasScores) {
+        protectedKodes.push(p.kodePeserta);
+        continue;
+      }
+
+      await tx.karya.updateMany({
+        where: { pesertaId: p.id, deletedAt: null },
+        data: { deletedAt: now },
+      });
+      await tx.peserta.update({
+        where: { id: p.id },
+        data: { deletedAt: now },
+      });
+      hiddenCount++;
+    }
+  });
+
+  await audit({
+    userId: admin.id,
+    aksi: "ATUR_TOTAL_PESERTA",
+    entitas: "peserta",
+    dataBaru: { target, createdOrRestored, hiddenCount, protectedKodes },
+  });
+
+  revalidatePath("/admin/peserta");
+  revalidatePath("/admin/karya");
+  revalidatePath("/admin/karya/label");
+  revalidatePath("/admin");
+  revalidatePath("/juri");
+
+  if (protectedKodes.length > 0) {
+    return {
+      ok: true,
+      message: `Total peserta disesuaikan ke ${target}. Slot ${protectedKodes.join(", ")} tetap dipertahankan karena sudah memiliki nilai.`,
+    };
+  }
+  return {
+    ok: true,
+    message: `Total peserta berhasil disesuaikan menjadi ${target} peserta (001–${String(target).padStart(3, "0")}).`,
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -458,5 +575,151 @@ export async function backupNowAction(_p: ActionState): Promise<ActionState> {
     return { ok: true, message: `Backup dibuat: ${f.name} (${(f.size / 1024).toFixed(0)} KB).` };
   } catch (e) {
     return fail(`Backup gagal: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+const resetDbSchema = z.object({
+  backupName: z
+    .string()
+    .trim()
+    .min(2, "Nama backup minimal 2 karakter.")
+    .max(40, "Nama backup maksimal 40 karakter."),
+  confirmCode: z.string().trim().min(1, "Kode konfirmasi wajib diisi."),
+});
+
+/**
+ * Backup penuh database + foto dengan nama kustom terlebih dahulu,
+ * lalu reset seluruh data penjurian, karya, dan peserta kembali bersih (75 slot awal).
+ * Akun Admin, sesi login aktif, akun Dewan Juri, dan Kriteria tetap dipertahankan.
+ */
+export async function backupAndResetDatabaseAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  const parsed = resetDbSchema.safeParse({
+    backupName: fd.get("backupName"),
+    confirmCode: fd.get("confirmCode"),
+  });
+  if (!parsed.success) return fail(firstIssue(parsed.error));
+
+  const expectedCode = (process.env.RESET_DB_CODE || "RESET-RWSA").trim();
+  if (parsed.data.confirmCode !== expectedCode) {
+    return fail("Kode konfirmasi reset tidak sesuai.");
+  }
+
+  const safeTag = sanitizeBackupTag(parsed.data.backupName);
+
+  // 1. WAJIB backup penuh terlebih dahulu sebelum menyentuh data
+  let backupInfo: { name: string; size: number };
+  try {
+    backupInfo = await runBackup(safeTag);
+  } catch (e) {
+    return fail(
+      `Reset dibatalkan karena backup penuh gagal dibuat: ${e instanceof Error ? e.message : String(e)}`
+    );
+  }
+
+  // 2. Reset data penjurian, karya, peserta, dan audit lama; siapkan ulang 75 slot bersih
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.penilaianDetail.deleteMany({});
+      await tx.penilaianHistory.deleteMany({});
+      await tx.penilaian.deleteMany({});
+      await tx.karyaGambar.deleteMany({});
+      await tx.karya.deleteMany({});
+      await tx.peserta.deleteMany({});
+      await tx.auditLog.deleteMany({});
+
+      await tx.eventSetting.upsert({
+        where: { id: 1 },
+        update: { fase: "PENJURIAN" },
+        create: { id: 1, nama: "MBtech Riding With Style Awards 2026", fase: "PENJURIAN" },
+      });
+
+      const DEFAULT_SLOTS = 75;
+      for (let i = 1; i <= DEFAULT_SLOTS; i++) {
+        const nomorStr = String(i).padStart(3, "0");
+        const peserta = await tx.peserta.create({
+          data: {
+            kodePeserta: nomorStr,
+            nama: `Peserta #${nomorStr}`,
+            karyaCounter: 1,
+          },
+        });
+        await tx.karya.create({
+          data: {
+            pesertaId: peserta.id,
+            akronimKarya: "RW",
+            noUrut: 1,
+            kodeKarya: nomorStr,
+            namaKarya: `Nomor ${nomorStr}`,
+            deskripsi: null,
+          },
+        });
+      }
+    });
+
+    await audit({
+      userId: admin.id,
+      aksi: "RESET_DATABASE",
+      entitas: "backup",
+      entitasId: backupInfo.name,
+      dataBaru: { backupName: backupInfo.name, backupSize: backupInfo.size, defaultSlots: 75 },
+    });
+  } catch (e) {
+    return fail(
+      `Backup "${backupInfo.name}" berhasil disimpan, tetapi reset database gagal: ${e instanceof Error ? e.message : String(e)
+      }`
+    );
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/peserta");
+  revalidatePath("/admin/karya");
+  revalidatePath("/admin/karya/label");
+  revalidatePath("/admin/nilai");
+  revalidatePath("/admin/berita-acara");
+  revalidatePath("/admin/backup");
+  revalidatePath("/juri");
+
+  return {
+    ok: true,
+    message: `Backup penuh tersimpan (${backupInfo.name}) dan database berhasil di-reset ke 75 slot awal.`,
+  };
+}
+
+/** Restore database SQLite dari berkas backup `.db.gz` yang dipilih (wajib kode konfirmasi). */
+export async function restoreBackupAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  const name = String(fd.get("name") ?? "").trim();
+  const confirmCode = String(fd.get("confirmCode") ?? "").trim();
+  if (!name) return fail("Pilih berkas backup terlebih dahulu.");
+
+  const expectedCode = (process.env.RESET_DB_CODE || "RESET-RWSA").trim();
+  if (confirmCode !== expectedCode) {
+    return fail("Kode konfirmasi tidak sesuai.");
+  }
+
+  try {
+    const res = await restoreDatabaseBackup(name);
+    await audit({
+      userId: admin.id,
+      aksi: "RESTORE_BACKUP",
+      entitas: "backup",
+      entitasId: res.restoredFrom,
+      dataBaru: res,
+    });
+    revalidatePath("/admin");
+    revalidatePath("/admin/peserta");
+    revalidatePath("/admin/karya");
+    revalidatePath("/admin/karya/label");
+    revalidatePath("/admin/nilai");
+    revalidatePath("/admin/berita-acara");
+    revalidatePath("/admin/backup");
+    revalidatePath("/juri");
+    return {
+      ok: true,
+      message: `Database berhasil di-restore dari ${res.restoredFrom}. (Backup pengaman otomatis: ${res.safetyBackup})`,
+    };
+  } catch (e) {
+    return fail(`Restore gagal: ${e instanceof Error ? e.message : String(e)}`);
   }
 }

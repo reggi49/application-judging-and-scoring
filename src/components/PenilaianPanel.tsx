@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Gallery } from "@/components/Gallery";
 import { loadDraft, removeDraft, saveDraft } from "@/lib/local-draft";
 import type { PenilaianState } from "@/lib/penilaian-types";
 import { formatScaled, formatSkor, isNilaiValid, SCALE, skorJuriScaled } from "@/lib/scoring";
@@ -77,8 +78,16 @@ export function PenilaianPanel(p: PanelProps) {
   const [ready, setReady] = useState(false);
   const [serverMsg, setServerMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+
+  // Kelola & Galeri Foto Unit Motor
+  const [fotos, setFotos] = useState<{ id: number }[]>(karya.fotos);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [fotoNotice, setFotoNotice] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const uuidRef = useRef<string>(p.initial?.clientUuid || safeUUID());
@@ -384,6 +393,109 @@ export function PenilaianPanel(p: PanelProps) {
     }
   };
 
+  const reopenForEdit = async () => {
+    if (reopening || p.fase !== "PENJURIAN") return;
+    if (!confirm("Buka kembali nilai untuk dikoreksi? Nilai akan berstatus DRAFT hingga Anda kirim final kembali.")) {
+      return;
+    }
+    setReopening(true);
+    setServerMsg(null);
+    try {
+      if (!navigator.onLine) {
+        setServerMsg("Tidak ada koneksi. Koreksi nilai membutuhkan koneksi internet.");
+        return;
+      }
+      const res = await fetch(p.endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ kodeKarya: karya.kode }),
+      });
+      if (res.status === 401) {
+        setSync("auth");
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as
+        | { ok: true; state: PenilaianState }
+        | { ok: false; message: string }
+        | null;
+      if (!json) throw new Error("Respons tidak valid");
+      if (json.ok) {
+        adoptServer(json.state);
+        setSync("saved");
+      } else {
+        setServerMsg(json.message);
+      }
+    } catch {
+      setServerMsg("Gagal membuka kunci nilai untuk koreksi. Coba lagi.");
+    } finally {
+      setReopening(false);
+    }
+  };
+
+  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!karya.id || !e.target.files || e.target.files.length === 0) return;
+    const files = Array.from(e.target.files);
+    e.target.value = "";
+    setUploadingFoto(true);
+    setFotoNotice(null);
+
+    let successCount = 0;
+    let errMsg = "";
+    for (const file of files) {
+      if (fotos.length + successCount >= 5) {
+        errMsg = "Maksimal 5 foto per motor.";
+        break;
+      }
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const res = await fetch(`/api/admin/karya/${karya.id}/foto`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          successCount++;
+          setFotos((prev) => [...prev, { id: data.id }]);
+        } else {
+          errMsg = data.error || "Gagal mengunggah foto.";
+          break;
+        }
+      } catch {
+        errMsg = "Gagal menghubungi server saat upload.";
+        break;
+      }
+    }
+
+    setUploadingFoto(false);
+    if (errMsg) {
+      setFotoNotice(`✕ ${errMsg}`);
+    } else if (successCount > 0) {
+      setFotoNotice(`✓ Berhasil menambahkan ${successCount} foto.`);
+      setTimeout(() => setFotoNotice(null), 3500);
+    }
+  };
+
+  const handleDeleteFoto = async (fotoId: number) => {
+    if (!karya.id) return;
+    if (!confirm("Hapus foto ini?")) return;
+    setFotoNotice(null);
+    try {
+      const res = await fetch(`/api/admin/karya/${karya.id}/foto?fotoId=${fotoId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus foto");
+      setFotos((prev) => prev.filter((f) => f.id !== fotoId));
+      setFotoNotice("✓ Foto berhasil dihapus.");
+      setTimeout(() => setFotoNotice(null), 3500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus foto";
+      setFotoNotice(`✕ ${msg}`);
+    }
+  };
+
   const syncBadge = status === "FINAL" ? { text: "FINAL · terkunci", cls: "badge-ok" } : SYNC_LABEL[sync];
 
   return (
@@ -422,6 +534,115 @@ export function PenilaianPanel(p: PanelProps) {
           lalu buka karya ini lagi; draft akan terkirim otomatis.
         </p>
       )}
+
+      {/* Card Foto Unit Motor */}
+      <section aria-label="Foto unit motor" className="mb-4">
+        <div className="card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="font-title text-base font-bold text-white">Foto Unit Motor</h3>
+              <p className="text-xs text-[#ded7c8]">{fotos.length}/5 foto terunggah (berbagi ke semua juri)</p>
+            </div>
+
+            {karya.id && fotos.length < 5 && (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFotoUpload}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFotoUpload}
+                />
+                <button
+                  type="button"
+                  disabled={uploadingFoto}
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="btn btn-gold btn-sm gap-1.5 px-3 py-1.5 text-xs font-extrabold shadow-md active:scale-95"
+                  title="Buka kamera smartphone untuk foto langsung"
+                >
+                  <span>Kamera</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={uploadingFoto}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn btn-ghost btn-sm gap-1 px-2.5 py-1.5 text-xs font-bold border border-gold/40 text-gold-light hover:bg-gold/20"
+                  title="Pilih file dari galeri HP / laptop"
+                >
+                  <span>Galeri</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {uploadingFoto && (
+            <div className="mb-3 rounded-lg border border-gold/50 bg-gold/15 p-2.5 text-center text-xs font-bold text-white animate-pulse">
+              Sedang mengompres & mengunggah foto ke server…
+            </div>
+          )}
+
+          {fotoNotice && (
+            <div
+              className={`mb-3 rounded-lg px-3 py-2 text-xs font-bold ${
+                fotoNotice.startsWith("✓")
+                  ? "bg-ok/20 border border-ok/60 text-ok"
+                  : "bg-danger/20 border border-danger/60 text-white"
+              }`}
+            >
+              {fotoNotice}
+            </div>
+          )}
+
+          {fotos.length > 0 ? (
+            <div>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 mb-3">
+                {fotos.map((f, idx) => (
+                  <div
+                    key={f.id}
+                    className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-line bg-panel2"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/foto/${f.id}?t=1`}
+                      alt={`Foto motor #${karya.kode} ke-${idx + 1}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    {karya.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteFoto(f.id)}
+                        className="absolute right-1.5 top-1.5 rounded-full bg-black/80 p-1.5 text-xs text-danger shadow-md hover:bg-danger hover:text-white transition-colors"
+                        title="Hapus foto ini"
+                        aria-label="Hapus foto"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <Gallery fotos={fotos} alt={karya.nama} />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-line/80 bg-panel2/40 p-6 text-center">
+              <p className="text-sm font-bold text-white">Belum ada foto motor</p>
+              <p className="text-xs text-[#ded7c8] mt-1 max-w-xs mx-auto">
+                Gunakan tombol <strong>&quot;Kamera&quot;</strong> di atas untuk mengambil gambar jok motor langsung di venue acara.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
 
       <section aria-labelledby="judul-karya">
         <div className="card p-5">
@@ -545,9 +766,23 @@ export function PenilaianPanel(p: PanelProps) {
             <p className="num gold-text font-title text-3xl font-black leading-none">{displayTotal ?? "—"}</p>
           </div>
           {status === "FINAL" ? (
-            <p className="text-sm font-bold text-ok bg-ok/15 border border-ok/50 px-4 py-2.5 rounded-lg">
-              Nilai final terkunci. Hubungi admin untuk membuka.
-            </p>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <p className="hidden sm:block text-sm font-bold text-ok bg-ok/15 border border-ok/50 px-3.5 py-2.5 rounded-lg">
+                {p.fase === "PENJURIAN"
+                  ? "Nilai final tersimpan."
+                  : "Nilai final terkunci (penjurian ditutup)."}
+              </p>
+              {p.fase === "PENJURIAN" && (
+                <button
+                  type="button"
+                  onClick={reopenForEdit}
+                  disabled={reopening}
+                  className="btn btn-ghost border-2 border-gold/70 text-gold-light hover:bg-gold hover:text-ink text-sm sm:text-base py-2.5 px-4 font-extrabold shadow-md"
+                >
+                  {reopening ? "Membuka…" : "Koreksi / Edit Nilai"}
+                </button>
+              )}
+            </div>
           ) : (
             <button
               type="button"
@@ -568,7 +803,9 @@ export function PenilaianPanel(p: PanelProps) {
       >
         <div className="p-5">
           <h2 className="font-title gold-text text-xl font-bold">Konfirmasi Nilai Final</h2>
-          <p className="mt-1 text-sm text-muted">Periksa kembali. Setelah final, nilai terkunci dan hanya admin yang dapat membukanya.</p>
+          <p className="mt-1 text-sm text-muted">
+            Periksa kembali nilai Anda. Setelah dikirim, Anda tetap dapat menggunakan tombol Koreksi / Edit Nilai selama fase penjurian masih dibuka.
+          </p>
 
           <div className="card mt-4 p-3">
             <p className="text-[0.7rem] uppercase tracking-[0.25em] text-muted">Karya</p>
