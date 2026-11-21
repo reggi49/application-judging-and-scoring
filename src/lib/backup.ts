@@ -3,7 +3,7 @@
  * biner eksternal, bisa dipanggil dari aplikasi, penjadwal internal, maupun CLI (`npm run backup`).
  */
 import { spawn } from "node:child_process";
-import { createGzip } from "node:zlib";
+import { createGunzip, createGzip } from "node:zlib";
 import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile, mkdir, open, readdir, rename, rm, stat, unlink } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
@@ -13,8 +13,18 @@ import { backupDir, storageDir as storageRoot } from "./env";
 
 export type BackupFile = { name: string; size: number; mtime: Date; kind: "db" | "uploads" };
 
-const NAME_RE = /^rwsa-\d{8}-\d{6}-[a-z]+\.(db\.gz|uploads\.tar\.gz)$/;
+const NAME_RE = /^rwsa-\d{8}-\d{6}-[a-z0-9_-]{1,48}\.(db\.gz|uploads\.tar\.gz)$/;
 export const isSafeBackupName = (n: string) => NAME_RE.test(n);
+
+export function sanitizeBackupTag(raw: string): string {
+  const cleaned = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return cleaned || "manual";
+}
 
 function stamp(d = new Date()) {
   const p = (n: number) => String(n).padStart(2, "0");
@@ -116,14 +126,15 @@ async function mirror(files: string[]) {
   }
 }
 
-export async function runBackup(tag: "manual" | "auto" | "cli" = "manual") {
+export async function runBackup(tag: string = "manual") {
+  const safeTag = sanitizeBackupTag(tag);
   const dir = backupDir();
   await mkdir(dir, { recursive: true });
   const ts = stamp();
-  const dbFile = path.join(dir, `rwsa-${ts}-${tag}.db.gz`);
+  const dbFile = path.join(dir, `rwsa-${ts}-${safeTag}.db.gz`);
   await dumpDatabase(dbFile);
   const files = [dbFile];
-  const upFile = path.join(dir, `rwsa-${ts}-${tag}.uploads.tar.gz`);
+  const upFile = path.join(dir, `rwsa-${ts}-${safeTag}.uploads.tar.gz`);
   if (process.env.BACKUP_INCLUDE_UPLOADS !== "0" && (await archiveUploads(upFile))) files.push(upFile);
   const mirrorWarning = await mirror(files);
   await applyRetention();
@@ -134,4 +145,58 @@ export async function runBackup(tag: "manual" | "auto" | "cli" = "manual") {
 export function backupFilePath(name: string) {
   if (!isSafeBackupName(name)) throw new Error("Nama berkas tidak valid");
   return path.join(backupDir(), name);
+}
+
+function resolveSqliteDbPath(): string {
+  const raw = process.env.DATABASE_URL;
+  if (!raw || !raw.startsWith("file:")) {
+    throw new Error("DATABASE_URL harus menggunakan SQLite (file:...)");
+  }
+  const filePart = raw.slice("file:".length).split("?")[0];
+  if (path.isAbsolute(filePart)) return filePart;
+  return path.resolve(process.cwd(), "prisma", filePart);
+}
+
+/**
+ * Restore database SQLite dari berkas backup `.db.gz`.
+ * Secara otomatis membuat safety snapshot `pre-restore` terlebih dahulu sebelum menimpa database aktif.
+ */
+export async function restoreDatabaseBackup(name: string) {
+  if (!isSafeBackupName(name) || !name.endsWith(".db.gz")) {
+    throw new Error("Berkas restore harus berupa arsip database .db.gz yang valid.");
+  }
+
+  const gzPath = backupFilePath(name);
+  await stat(gzPath); // pastikan berkas ada
+
+  const dbPath = resolveSqliteDbPath();
+  const tmpRestore = `${dbPath}.restore.tmp`;
+  await rm(tmpRestore, { force: true });
+
+  // 1. Dekompresi & verifikasi header SQLite terlebih dahulu
+  try {
+    await pipeline(createReadStream(gzPath), createGunzip(), createWriteStream(tmpRestore));
+    await verifySqliteSnapshot(tmpRestore);
+  } catch (e) {
+    await rm(tmpRestore, { force: true });
+    throw e;
+  }
+
+  // 2. Buat backup pengaman otomatis sebelum menimpa DB aktif
+  const safety = await runBackup("pre-restore");
+
+  // 3. Putus koneksi Prisma, ganti file DB SQLite secara atomik, lalu sambungkan kembali
+  try {
+    await db.$disconnect();
+    await rm(`${dbPath}-wal`, { force: true });
+    await rm(`${dbPath}-shm`, { force: true });
+    await rename(tmpRestore, dbPath);
+    await db.$connect();
+  } catch (e) {
+    await rm(tmpRestore, { force: true });
+    await db.$connect().catch(() => {});
+    throw e;
+  }
+
+  return { restoredFrom: name, safetyBackup: safety.name };
 }

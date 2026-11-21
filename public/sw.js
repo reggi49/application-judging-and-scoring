@@ -3,7 +3,7 @@
  * Yang di-cache: aset statis build (/_next/static), ikon, dan halaman offline.
  * Draft nilai juri disimpan oleh aplikasi sendiri di IndexedDB (bukan oleh service worker).
  */
-const VERSION = "rwsa-v2";
+const VERSION = "rwsa-v3";
 const STATIC_CACHE = `${VERSION}-static`;
 const OFFLINE_URL = "/offline.html";
 
@@ -16,7 +16,7 @@ self.addEventListener("install", (event) => {
           OFFLINE_URL,
           "/icons/icon-192.png",
           "/icons/icon-384.png",
-          "/icons/icon-512.png",
+          "/icons/ticon-512.png",
           "/icons/maskable-512.png",
           "/icons/apple-touch-icon.png",
         ])
