@@ -2,9 +2,14 @@
 
 import { useEffect } from "react";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 declare global {
   interface Window {
-    __deferredPwaPrompt?: any;
+    __deferredPwaPrompt?: BeforeInstallPromptEvent;
   }
 }
 
@@ -15,44 +20,59 @@ export function PwaRegister() {
     // Tangkap beforeinstallprompt sesegera mungkin di window
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
-      window.__deferredPwaPrompt = e;
+      window.__deferredPwaPrompt = e as BeforeInstallPromptEvent;
       window.dispatchEvent(new CustomEvent("pwa-prompt-ready"));
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
-    if ("serviceWorker" in navigator) {
-      if (process.env.NODE_ENV !== "production") {
-        // Di mode development, bersihkan Service Worker & cache lama agar chunk HMR selalu segar
-        navigator.serviceWorker
-          .getRegistrations()
-          .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-          .catch(() => {});
-        if ("caches" in window) {
-          caches
-            .keys()
-            .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-            .catch(() => {});
-        }
-      } else {
-        // Di mode production, daftarkan Service Worker pada HTTPS atau localhost
-        const isLocalhost =
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1";
-        const isHttps = window.location.protocol === "https:";
+    let onControllerChange: (() => void) | undefined;
+    let onVisibilityChange: (() => void) | undefined;
 
-        if (isHttps || isLocalhost) {
-          navigator.serviceWorker
-            .register("/sw.js", { scope: "/", updateViaCache: "none" })
-            .catch((err) => {
-              console.warn("Gagal mendaftarkan Service Worker:", err);
-            });
-        }
+    if ("serviceWorker" in navigator) {
+      // Hanya daftarkan di HTTPS atau localhost
+      const isLocalhost =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      const isHttps = window.location.protocol === "https:";
+
+      if (isHttps || isLocalhost) {
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        let refreshing = false;
+
+        // Jika Service Worker baru mengambil alih (update), reload halaman otomatis
+        onControllerChange = () => {
+          if (!hadController || refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
+        navigator.serviceWorker
+          .register("/sw.js", { scope: "/", updateViaCache: "none" })
+          .then((reg) => {
+            reg.update().catch(() => {});
+            onVisibilityChange = () => {
+              if (document.visibilityState === "visible") {
+                reg.update().catch(() => {});
+              }
+            };
+            document.addEventListener("visibilitychange", onVisibilityChange);
+          })
+          .catch((err) => {
+            console.warn("Gagal mendaftarkan Service Worker:", err);
+          });
       }
     }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      if (onControllerChange && "serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      }
+      if (onVisibilityChange) {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
     };
   }, []);
 

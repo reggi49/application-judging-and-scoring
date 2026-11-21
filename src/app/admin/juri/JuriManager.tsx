@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   createJuriAction,
   updateJuriAction,
@@ -21,19 +22,29 @@ export type JuriItem = {
 const PAGE_SIZE = 20;
 
 export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
+  const router = useRouter();
   const [createState, createFormAction] = useActionState(createJuriAction, {});
   const [editId, setEditId] = useState<number | null>(null);
+  const [editKode, setEditKode] = useState<string>("");
+  const [editNama, setEditNama] = useState<string>("");
   const [editState, editFormAction, isEditPending] = useActionState(updateJuriAction, {});
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  const startEdit = (j: JuriItem) => {
+    setEditId(j.id);
+    setEditKode(j.kodeJuri);
+    setEditNama(j.nama);
+  };
+
   useEffect(() => {
     if (editState?.ok) {
       setEditId(null);
+      router.refresh();
     }
-  }, [editState]);
+  }, [editState, router]);
 
   const counts = useMemo(() => {
     let active = 0;
@@ -163,8 +174,8 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                   <th className="w-24">ID Juri</th>
                   <th>Nama Dewan Juri</th>
                   <th className="w-28 num text-center">Status</th>
-                  <th className="w-32 num text-center">Karya Final</th>
-                  <th className="w-48 text-right">Aksi</th>
+                  <th className="w-28 num text-center">Karya Final</th>
+                  <th className="w-60 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,28 +193,42 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                       <td className="num font-black text-lg text-gold-light tracking-wide">{j.kodeJuri}</td>
                       <td>
                         {editId === j.id ? (
-                          <form action={editFormAction} className="flex items-center gap-2">
+                          <form action={editFormAction} className="flex flex-wrap items-center gap-2">
                             <input type="hidden" name="id" value={j.id} />
                             <input
+                              name="kodeJuri"
+                              value={editKode}
+                              onChange={(e) => setEditKode(e.target.value.toUpperCase())}
+                              minLength={2}
+                              maxLength={20}
+                              placeholder="ID"
+                              aria-label="ID Juri"
+                              className="w-24 rounded-lg border border-line bg-[#201e1a] px-2.5 py-2 text-xs font-black uppercase text-gold-light focus:border-gold focus:outline-none"
+                              required
+                            />
+                            <input
                               name="nama"
-                              defaultValue={j.nama}
+                              value={editNama}
+                              onChange={(e) => setEditNama(e.target.value)}
                               minLength={2}
                               maxLength={120}
-                              className="input text-xs font-semibold py-1.5"
+                              placeholder="Nama lengkap juri"
+                              aria-label="Nama Dewan Juri"
+                              className="flex-1 min-w-[160px] rounded-lg border border-gold/70 bg-[#201e1a] px-3 py-2 text-sm font-semibold text-white focus:border-gold focus:outline-none"
                               required
                               autoFocus
                             />
                             <button
                               type="submit"
                               disabled={isEditPending}
-                              className="btn btn-gold btn-sm text-xs font-bold"
+                              className="inline-flex items-center justify-center rounded-lg bg-gradient-to-b from-[#ffeaae] via-[#f3be4d] to-[#cf9324] border border-[#fff2c8] px-3 py-2 text-xs font-bold text-[#141006] hover:brightness-105 disabled:opacity-50"
                             >
                               {isEditPending ? "Menyimpan…" : "Simpan"}
                             </button>
                             <button
                               type="button"
                               disabled={isEditPending}
-                              className="btn btn-ghost btn-sm text-xs"
+                              className="inline-flex items-center justify-center rounded-lg border border-line bg-[#2b2721] px-3 py-2 text-xs font-semibold text-muted hover:text-white"
                               onClick={() => setEditId(null)}
                             >
                               Batal
@@ -233,8 +258,8 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                           {editId !== j.id && (
                             <button
                               type="button"
-                              onClick={() => setEditId(j.id)}
-                              className="btn btn-outline btn-sm text-xs font-bold"
+                              onClick={() => startEdit(j)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-gold/60 bg-gold/10 px-3 py-1.5 text-xs font-bold text-gold-light hover:bg-gold hover:text-ink transition-colors"
                             >
                               Edit
                             </button>
@@ -313,21 +338,40 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                   {editId === j.id ? (
                     <form
                       action={editFormAction}
-                      className="space-y-2 rounded-lg bg-panel2/80 p-3 border border-gold-dark/60"
+                      className="space-y-2.5 rounded-lg bg-panel2/80 p-3 border border-gold-dark/60"
                     >
                       <input type="hidden" name="id" value={j.id} />
-                      <label className="text-xs font-bold text-gold-light block">
-                        Ubah Nama Dewan Juri:
-                      </label>
-                      <input
-                        name="nama"
-                        defaultValue={j.nama}
-                        minLength={2}
-                        maxLength={120}
-                        className="input text-sm font-semibold"
-                        required
-                        autoFocus
-                      />
+                      <div className="grid grid-cols-[96px_1fr] gap-2">
+                        <div>
+                          <label className="text-[11px] font-bold text-gold-light block mb-1">
+                            ID Juri:
+                          </label>
+                          <input
+                            name="kodeJuri"
+                            value={editKode}
+                            onChange={(e) => setEditKode(e.target.value.toUpperCase())}
+                            minLength={2}
+                            maxLength={20}
+                            className="input text-sm font-black uppercase py-2"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-gold-light block mb-1">
+                            Nama Dewan Juri:
+                          </label>
+                          <input
+                            name="nama"
+                            value={editNama}
+                            onChange={(e) => setEditNama(e.target.value)}
+                            minLength={2}
+                            maxLength={120}
+                            className="input text-sm font-semibold py-2"
+                            required
+                            autoFocus
+                          />
+                        </div>
+                      </div>
                       <div className="flex items-center gap-2 pt-1">
                         <button
                           type="submit"
@@ -367,10 +411,10 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
                     {editId !== j.id && (
                       <button
                         type="button"
-                        onClick={() => setEditId(j.id)}
-                        className="btn btn-ghost btn-sm text-xs font-bold px-3"
+                        onClick={() => startEdit(j)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-gold/60 bg-gold/10 px-3 py-2 text-xs font-bold text-gold-light hover:bg-gold hover:text-ink transition-colors"
                       >
-                        Edit
+                        Edit Nama
                       </button>
                     )}
 
