@@ -60,3 +60,6 @@ next-env.d.ts
 /.local
 /storage
 /dist-deploy
+
+#documentation
+MANUAL_BOOK_RWSA_2026.pdf
