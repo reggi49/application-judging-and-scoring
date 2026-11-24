@@ -44,8 +44,6 @@ export function QrScannerModal({
         }
         scannerRef.current = null;
       }
-      setErrorMsg(null);
-      setScannedResult(null);
       return;
     }
 

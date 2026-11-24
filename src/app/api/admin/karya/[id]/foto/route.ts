@@ -107,12 +107,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Tidak diizinkan." }, { status: 401 });
 
+  const karyaId = Number((await params).id);
+  if (!Number.isInteger(karyaId)) return NextResponse.json({ error: "ID karya tidak valid." }, { status: 400 });
+
   const url = new URL(req.url);
   const fotoId = Number(url.searchParams.get("fotoId"));
   if (!Number.isInteger(fotoId)) return NextResponse.json({ error: "ID foto tidak valid." }, { status: 400 });
 
   const g = await db.karyaGambar.findUnique({ where: { id: fotoId }, include: { karya: true } });
-  if (!g) return NextResponse.json({ error: "Foto tidak ditemukan." }, { status: 404 });
+  if (!g || g.karyaId !== karyaId) return NextResponse.json({ error: "Foto tidak ditemukan." }, { status: 404 });
 
   await db.$transaction(async (tx) => {
     await tx.karyaGambar.delete({ where: { id: fotoId } });

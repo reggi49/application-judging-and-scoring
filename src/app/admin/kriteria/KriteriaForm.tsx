@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { ActionState } from "@/lib/action-state";
 import { saveKriteriaAction } from "../actions";
 import { FormMessage, SubmitButton } from "@/components/FormBits";
 

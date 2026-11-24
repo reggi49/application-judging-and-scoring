@@ -477,6 +477,7 @@ export async function unlockPenilaianAction(fd: FormData) {
 }
 
 export async function backupNowAction(_p: ActionState): Promise<ActionState> {
+  void _p;
   const admin = await requireAdmin();
   try {
     const f = await runBackup("manual");

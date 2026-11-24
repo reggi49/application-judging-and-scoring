@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/dal";
 import { buildRanking } from "@/lib/ranking";
 import { getEvent } from "@/lib/event";

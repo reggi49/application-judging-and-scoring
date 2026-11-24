@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DeleteButton } from "@/components/DeleteButton";
 import { deleteKaryaAction } from "../actions";
 
@@ -53,14 +53,19 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
     });
   }, [items, q, filter]);
 
-  // Reset ke halaman 1 setiap kali query pencarian atau filter berubah
-  useEffect(() => {
-    setPage(1);
-  }, [q, filter]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
   const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const handleQChange = (val: string) => {
+    setQ(val);
+    setPage(1);
+  };
+
+  const handleFilterChange = (next: "ALL" | "WITH_FOTO" | "NO_FOTO" | "JUDGED") => {
+    setFilter(next);
+    setPage(1);
+  };
 
   const goToPage = (p: number) => {
     const validPage = Math.min(totalPages, Math.max(1, p));
@@ -76,12 +81,12 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
             className="input text-base py-2.5"
             placeholder="Cari ID / nama karya / bengkel…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => handleQChange(e.target.value)}
           />
           {q && (
             <button
               type="button"
-              onClick={() => setQ("")}
+              onClick={() => handleQChange("")}
               className="btn btn-ghost btn-sm"
               aria-label="Bersihkan pencarian"
             >
@@ -94,7 +99,7 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
           <div className="flex flex-wrap rounded-lg border border-line bg-panel2 p-1 w-full sm:w-auto justify-between sm:justify-start">
             <button
               type="button"
-              onClick={() => setFilter("ALL")}
+              onClick={() => handleFilterChange("ALL")}
               className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "ALL" ? "bg-gold text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -103,7 +108,7 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilter("JUDGED")}
+              onClick={() => handleFilterChange("JUDGED")}
               className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "JUDGED" ? "bg-ok text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -112,7 +117,7 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilter("WITH_FOTO")}
+              onClick={() => handleFilterChange("WITH_FOTO")}
               className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "WITH_FOTO" ? "bg-gold-light text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -121,7 +126,7 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilter("NO_FOTO")}
+              onClick={() => handleFilterChange("NO_FOTO")}
               className={`rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "NO_FOTO" ? "bg-warn text-ink" : "text-[#ded7c8] hover:text-white"
               }`}

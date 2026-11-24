@@ -120,9 +120,11 @@ export function PenilaianPanel(p: PanelProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncNowRef = useRef<() => void>(() => {});
 
-  valuesRef.current = values;
-  catatanRef.current = catatan;
-  statusRef.current = status;
+  useEffect(() => {
+    valuesRef.current = values;
+    catatanRef.current = catatan;
+    statusRef.current = status;
+  }, [values, catatan, status]);
 
   const canEdit = p.fase === "PENJURIAN" && status !== "FINAL";
 
@@ -238,7 +240,9 @@ export function PenilaianPanel(p: PanelProps) {
     }
   }, [p.endpoint, karya.kode, payloadNilai, adoptServer, persistLocal, scheduleSync]);
 
-  syncNowRef.current = syncNow;
+  useEffect(() => {
+    syncNowRef.current = syncNow;
+  }, [syncNow]);
 
   /* Muat draft lokal & putuskan sumber kebenaran */
   useEffect(() => {

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { QrScannerModal } from "@/components/QrScannerModal";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
@@ -30,31 +31,11 @@ export function JuriKaryaList({
   juriNama: string;
   juriKode: string;
 }) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"ALL" | Item["status"]>("ALL");
   const [page, setPage] = useState(1);
   const [scannerOpen, setScannerOpen] = useState(false);
-
-  const handleScanSuccess = (kodeKarya: string) => {
-    setScannerOpen(false);
-    // Langsung menuju ke detail dan lembar penilaian karya yang di-scan
-    window.location.href = `/juri/karya/${encodeURIComponent(kodeKarya)}`;
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = q.trim();
-    if (!clean) return;
-    const num = parseInt(clean, 10);
-    if (!isNaN(num) && num >= 1 && num <= 250) {
-      const pad = String(num).padStart(3, "0");
-      window.location.href = `/juri/karya/${pad}`;
-      return;
-    }
-    if (filtered.length === 1) {
-      window.location.href = `/juri/karya/${filtered[0].kode}`;
-    }
-  };
 
   const counts = useMemo(() => {
     const c = { BELUM: 0, DRAFT: 0, FINAL: 0, total: items.length };
@@ -77,10 +58,36 @@ export function JuriKaryaList({
     });
   }, [items, q, filter]);
 
-  // Reset ke halaman 1 setiap kali query pencarian atau tab filter berganti
-  useEffect(() => {
+  const handleScanSuccess = (kodeKarya: string) => {
+    setScannerOpen(false);
+    // Langsung menuju ke detail dan lembar penilaian karya yang di-scan
+    router.push(`/juri/karya/${encodeURIComponent(kodeKarya)}`);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = q.trim();
+    if (!clean) return;
+    const num = parseInt(clean, 10);
+    if (!isNaN(num) && num >= 1 && num <= 250) {
+      const pad = String(num).padStart(3, "0");
+      router.push(`/juri/karya/${pad}`);
+      return;
+    }
+    if (filtered.length === 1) {
+      router.push(`/juri/karya/${filtered[0].kode}`);
+    }
+  };
+
+  const handleQChange = (val: string) => {
+    setQ(val);
     setPage(1);
-  }, [q, filter]);
+  };
+
+  const handleFilterChange = (next: "ALL" | Item["status"]) => {
+    setFilter(next);
+    setPage(1);
+  };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
@@ -145,7 +152,7 @@ export function JuriKaryaList({
         <div className="mt-3.5 grid grid-cols-3 gap-2">
           <button
             type="button"
-            onClick={() => setFilter(filter === "BELUM" ? "ALL" : "BELUM")}
+            onClick={() => handleFilterChange(filter === "BELUM" ? "ALL" : "BELUM")}
             className={`rounded-xl border p-2 text-center transition-all ${
               filter === "BELUM"
                 ? "border-warn bg-warn/25 shadow-md"
@@ -160,7 +167,7 @@ export function JuriKaryaList({
 
           <button
             type="button"
-            onClick={() => setFilter(filter === "DRAFT" ? "ALL" : "DRAFT")}
+            onClick={() => handleFilterChange(filter === "DRAFT" ? "ALL" : "DRAFT")}
             className={`rounded-xl border p-2 text-center transition-all ${
               filter === "DRAFT"
                 ? "border-gold bg-gold/25 shadow-md"
@@ -175,7 +182,7 @@ export function JuriKaryaList({
 
           <button
             type="button"
-            onClick={() => setFilter(filter === "FINAL" ? "ALL" : "FINAL")}
+            onClick={() => handleFilterChange(filter === "FINAL" ? "ALL" : "FINAL")}
             className={`rounded-xl border p-2 text-center transition-all ${
               filter === "FINAL"
                 ? "border-ok bg-ok/25 shadow-md"
@@ -208,12 +215,12 @@ export function JuriKaryaList({
               className="input text-base font-semibold py-3 pl-3.5 pr-10 shadow-inner"
               placeholder="Cari nomor slot (misal: 25) atau nama motor…"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => handleQChange(e.target.value)}
             />
             {q && (
               <button
                 type="button"
-                onClick={() => setQ("")}
+                onClick={() => handleQChange("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#ded7c8] hover:text-white"
                 aria-label="Bersihkan pencarian"
               >
@@ -255,7 +262,7 @@ export function JuriKaryaList({
               <button
                 key={k}
                 type="button"
-                onClick={() => setFilter(k)}
+                onClick={() => handleFilterChange(k)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold shrink-0 transition-all ${
                   isActive
                     ? "bg-gold text-ink font-black shadow-md"
@@ -293,8 +300,8 @@ export function JuriKaryaList({
             <button
               type="button"
               onClick={() => {
-                setQ("");
-                setFilter("ALL");
+                handleQChange("");
+                handleFilterChange("ALL");
               }}
               className="btn btn-ghost btn-sm mt-3 font-bold text-gold-light"
             >

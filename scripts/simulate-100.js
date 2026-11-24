@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { PrismaClient } = require("@prisma/client");
 const { randomUUID } = require("crypto");
 
@@ -61,11 +62,7 @@ async function main() {
   const pesertaList = Array.from(pesertaMap.values());
   console.log(`✓ ${pesertaList.length} Peserta (Bengkel Custom) aktif`);
 
-  // 2. Ambil foto yang ada untuk dipakai sebagai sample gambar karya
-  const existingFoto = await prisma.karyaGambar.findMany({ take: 5, select: { id: true } });
-  const sampleFotoId = existingFoto[0]?.id || null;
-
-  // 3. Hitung berapa karya yang sudah ada
+  // 2. Hitung berapa karya yang sudah ada
   const currentKaryaCount = await prisma.karya.count();
   const needed = 100 - currentKaryaCount;
   console.log(`Status saat ini: ${currentKaryaCount} karya. Menambahkan ${needed > 0 ? needed : 0} karya lagi hingga total 100...`);

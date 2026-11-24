@@ -13,7 +13,7 @@
  * - public/favicon.ico & src/app/favicon.ico (Multi-size ICO 16, 32, 48)
  */
 import sharp from "sharp";
-import { mkdir, writeFile, copyFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();

@@ -2,9 +2,14 @@
 
 import { useEffect } from "react";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 declare global {
   interface Window {
-    __deferredPwaPrompt?: any;
+    __deferredPwaPrompt?: BeforeInstallPromptEvent;
   }
 }
 
@@ -15,7 +20,7 @@ export function PwaRegister() {
     // Tangkap beforeinstallprompt sesegera mungkin di window
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
-      window.__deferredPwaPrompt = e;
+      window.__deferredPwaPrompt = e as BeforeInstallPromptEvent;
       window.dispatchEvent(new CustomEvent("pwa-prompt-ready"));
     };
 

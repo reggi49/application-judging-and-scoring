@@ -63,7 +63,10 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
   const [btSupport, setBtSupport] = useState<{ ok: boolean; reason?: string }>({ ok: true });
 
   useEffect(() => {
-    setBtSupport(checkWebBluetoothAvailability());
+    const t = setTimeout(() => {
+      setBtSupport(checkWebBluetoothAvailability());
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   const safeWMm = Math.min(120, Math.max(15, Number.isFinite(wMm) ? wMm : 40));

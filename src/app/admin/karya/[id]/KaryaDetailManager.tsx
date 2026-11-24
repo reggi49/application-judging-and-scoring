@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
-import type { ActionState } from "@/lib/action-state";
 import { updateKaryaAction, deleteFotoAction, setCoverAction, moveFotoAction } from "../../actions";
 import { FormMessage, SubmitButton } from "@/components/FormBits";
 

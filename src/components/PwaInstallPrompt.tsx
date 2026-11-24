@@ -18,35 +18,37 @@ export function PwaInstallPrompt() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Cek apakah sudah berjalan di mode terpasang (PWA Standalone)
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone === true);
-    setIsStandalone(Boolean(standalone));
+    const initTimer = setTimeout(() => {
+      // Cek apakah sudah berjalan di mode terpasang (PWA Standalone)
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone === true);
+      setIsStandalone(Boolean(standalone));
 
-    // Deteksi protokol HTTP non-secure
-    const isLocal =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-    if (window.location.protocol === "http:" && !isLocal) {
-      setIsHttpInsecure(true);
-    }
+      // Deteksi protokol HTTP non-secure
+      const isLocal =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      if (window.location.protocol === "http:" && !isLocal) {
+        setIsHttpInsecure(true);
+      }
 
-    // Deteksi iOS (iPhone, iPod, iPad)
-    const ua = window.navigator.userAgent.toLowerCase();
-    const isIosDevice =
-      /iphone|ipad|ipod/.test(ua) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    setIsIos(isIosDevice);
+      // Deteksi iOS (iPhone, iPod, iPad)
+      const ua = window.navigator.userAgent.toLowerCase();
+      const isIosDevice =
+        /iphone|ipad|ipod/.test(ua) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      setIsIos(isIosDevice);
 
-    // Deteksi In-App Browser (WhatsApp, Instagram, FB, Line, Telegram)
-    const inApp = /fban|fbav|instagram|line|micromessenger|telegram|whatsapp/i.test(ua);
-    setIsInAppBrowser(inApp);
+      // Deteksi In-App Browser (WhatsApp, Instagram, FB, Line, Telegram)
+      const inApp = /fban|fbav|instagram|line|micromessenger|telegram|whatsapp/i.test(ua);
+      setIsInAppBrowser(inApp);
 
-    // Periksa apakah prompt sudah ditangkap sebelumnya
-    if (window.__deferredPwaPrompt) {
-      setDeferredPrompt(window.__deferredPwaPrompt);
-    }
+      // Periksa apakah prompt sudah ditangkap sebelumnya
+      if (window.__deferredPwaPrompt) {
+        setDeferredPrompt(window.__deferredPwaPrompt);
+      }
+    }, 0);
 
     const onPromptReady = () => {
       if (window.__deferredPwaPrompt) {
@@ -63,6 +65,7 @@ export function PwaInstallPrompt() {
     window.addEventListener("pwa-prompt-ready", onPromptReady);
 
     return () => {
+      clearTimeout(initTimer);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       window.removeEventListener("pwa-prompt-ready", onPromptReady);
     };

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { apiUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { buildRanking } from "@/lib/ranking";
-import { getEvent } from "@/lib/event";
 
 export const runtime = "nodejs";
 
@@ -10,9 +9,8 @@ export async function GET() {
   const admin = await apiUser("ADMIN");
   if (!admin) return new NextResponse("Unauthorized", { status: 401 });
 
-  const [data, ev, waRows] = await Promise.all([
+  const [data, waRows] = await Promise.all([
     buildRanking(),
-    getEvent(),
     db.karya.findMany({ where: { deletedAt: null }, select: { id: true, whatsapp: true } }),
   ]);
   const waByKaryaId = new Map(waRows.map((w) => [w.id, w.whatsapp ?? ""]));

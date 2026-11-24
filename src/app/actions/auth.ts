@@ -1,14 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import {
   createSession,
   currentToken,
   destroyOtherSessions,
   destroySession,
-  getDummyHash,
   getSessionUser,
   hashPassword,
   validatePasswordStrength,
@@ -16,24 +14,6 @@ import {
 } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import type { ActionState } from "@/lib/action-state";
-
-const MAX_FAILED = 5;
-const LOCK_MS = 5 * 60 * 1000;
-
-/** Pembatas laju per-IP (memori proses; cukup untuk satu server skala kecil). */
-const ipHits = new Map<string, { n: number; reset: number }>();
-function ipLimited(ip: string) {
-  const now = Date.now();
-  const e = ipHits.get(ip);
-  if (!e || e.reset < now) {
-    ipHits.set(ip, { n: 1, reset: now + 10 * 60 * 1000 });
-    return false;
-  }
-  e.n += 1;
-  return e.n > 30;
-}
-
-const GENERIC = "Username atau password salah.";
 
 /** Login Juri: tanpa password. Cukup pilih ID / nama juri. */
 export async function loginJuriAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
