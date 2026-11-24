@@ -23,12 +23,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      // Service worker harus selalu diambil ulang agar pembaruan cepat sampai
+      // Service worker & manifest harus selalu dicek ulang agar pembaruan PWA otomatis sampai
       {
         source: "/sw.js",
         headers: [
           { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
           { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/manifest.:ext(json|webmanifest)",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, must-revalidate" },
         ],
       },
     ];

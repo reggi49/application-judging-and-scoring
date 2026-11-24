@@ -24,7 +24,7 @@ export const metadata: Metadata = {
       { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/ticon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
       { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
@@ -41,8 +41,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${inter.variable} ${cinzel.variable}`}>
-      <body className="antialiased">
+    <html lang="id" className={`${inter.variable} ${cinzel.variable}`} suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         {children}
         <PwaRegister />
       </body>

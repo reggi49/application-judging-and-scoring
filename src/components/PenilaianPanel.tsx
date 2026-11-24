@@ -89,6 +89,7 @@ export function PenilaianPanel(p: PanelProps) {
   const [ready, setReady] = useState(false);
   const [serverMsg, setServerMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
@@ -497,6 +498,46 @@ export function PenilaianPanel(p: PanelProps) {
       setInfoNotice(`✕ ${msg}`);
     } finally {
       setSavingInfo(false);
+    }
+  };
+
+  const reopenForEdit = async () => {
+    if (reopening || p.fase !== "PENJURIAN") return;
+    if (!confirm("Buka kembali nilai untuk dikoreksi? Nilai akan berstatus DRAFT hingga Anda kirim final kembali.")) {
+      return;
+    }
+    setReopening(true);
+    setServerMsg(null);
+    try {
+      if (!navigator.onLine) {
+        setServerMsg("Tidak ada koneksi. Koreksi nilai membutuhkan koneksi internet.");
+        return;
+      }
+      const res = await fetch(p.endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ kodeKarya: karya.kode }),
+      });
+      if (res.status === 401) {
+        setSync("auth");
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as
+        | { ok: true; state: PenilaianState }
+        | { ok: false; message: string }
+        | null;
+      if (!json) throw new Error("Respons tidak valid");
+      if (json.ok) {
+        adoptServer(json.state);
+        setSync("saved");
+      } else {
+        setServerMsg(json.message);
+      }
+    } catch {
+      setServerMsg("Gagal membuka kunci nilai untuk koreksi. Coba lagi.");
+    } finally {
+      setReopening(false);
     }
   };
 
@@ -932,9 +973,23 @@ export function PenilaianPanel(p: PanelProps) {
             <p className="num gold-text font-title text-3xl font-black leading-none">{displayTotal ?? "—"}</p>
           </div>
           {status === "FINAL" ? (
-            <p className="text-sm font-bold text-ok bg-ok/15 border border-ok/50 px-4 py-2.5 rounded-lg">
-              Nilai final terkunci. Hubungi admin untuk membuka.
-            </p>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <p className="hidden sm:block text-sm font-bold text-ok bg-ok/15 border border-ok/50 px-3.5 py-2.5 rounded-lg">
+                {p.fase === "PENJURIAN"
+                  ? "Nilai final tersimpan."
+                  : "Nilai final terkunci (penjurian ditutup)."}
+              </p>
+              {p.fase === "PENJURIAN" && (
+                <button
+                  type="button"
+                  onClick={reopenForEdit}
+                  disabled={reopening}
+                  className="btn btn-ghost border-2 border-gold/70 text-gold-light hover:bg-gold hover:text-ink text-sm sm:text-base py-2.5 px-4 font-extrabold shadow-md"
+                >
+                  {reopening ? "Membuka…" : "Koreksi / Edit Nilai"}
+                </button>
+              )}
+            </div>
           ) : (
             <button
               type="button"

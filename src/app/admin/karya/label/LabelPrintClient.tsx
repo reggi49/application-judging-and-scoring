@@ -40,15 +40,14 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
   const [wMm, setWMm] = useState<number>(40);
   const [hMm, setHMm] = useState<number>(30);
   const [rotate90, setRotate90] = useState<boolean>(true);
-  const [logoVariant, setLogoVariant] = useState<LogoVariant>("mbtech");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [logoVariant, setLogoVariant] = useState<LogoVariant>("rwsa");
   const [fromSlot, setFromSlot] = useState<string>("1");
   const [toSlot, setToSlot] = useState<string>(String(items.length || 75));
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
-  // State Checklist Pilihan Cetak QR
-  const [selectedKodes, setSelectedKodes] = useState<Set<string>>(
-    () => new Set(items.map((it) => it.kodeKarya))
-  );
+  // State Checklist Pilihan Cetak QR (default kosong agar tidak salah cetak)
+  const [selectedKodes, setSelectedKodes] = useState<Set<string>>(() => new Set());
 
   // State Web Bluetooth Niimbot
   const [btConn, setBtConn] = useState<NiimbotConnectionSummary | null>(null);
@@ -156,23 +155,22 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
   };
 
   // ── Handler Web Bluetooth ──────────────────────────────────────────────────
-  const handleBtConnect = async () => {
-    setBtError(null);
-    setBtBusy(true);
-    setBtMessage("Pilih printer Niimbot pada jendela Bluetooth…");
-    try {
+  const ensureBtConnected = async (): Promise<{ wMm: number; hMm: number; rotate90: boolean }> => {
+    let activeWMm = safeWMm;
+    let activeHMm = safeHMm;
+    let activeRotate90 = rotate90;
+    if (!btConn) {
+      setBtMessage("Pilih printer Niimbot pada jendela Bluetooth…");
       const info = await connectNiimbotPrinter();
       setBtConn(info);
-      const detectedTxt = applyDetectedRoll(info.detectedRollMm);
-      setBtMessage(
-        `Terhubung ke ${info.printer.label}` + (detectedTxt ? ` • Rol terdeteksi ${detectedTxt}` : " • Siap cetak")
-      );
-    } catch (err) {
-      setBtError(err instanceof Error ? err.message : String(err));
-      setBtMessage(null);
-    } finally {
-      setBtBusy(false);
+      if (info.detectedRollMm) {
+        applyDetectedRoll(info.detectedRollMm);
+        activeWMm = Math.min(120, Math.max(15, info.detectedRollMm.wMm));
+        activeHMm = Math.min(150, Math.max(15, info.detectedRollMm.hMm));
+        activeRotate90 = info.detectedRollMm.wMm > info.detectedRollMm.hMm;
+      }
     }
+    return { wMm: activeWMm, hMm: activeHMm, rotate90: activeRotate90 };
   };
 
   const handleBtDisconnect = async () => {
@@ -194,7 +192,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
       if (info) {
         setBtConn(info);
         const detectedTxt = applyDetectedRoll(info.detectedRollMm);
-        setBtMessage(detectedTxt ? `Rol terdeteksi: ${detectedTxt}` : "Status printer diperbarui.");
+        setBtMessage(detectedTxt ? `Rol terdeteksi: ${detectedTxt}` : null);
       }
     } catch (err) {
       setBtError(err instanceof Error ? err.message : String(err));
@@ -211,11 +209,12 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
     setBtPrintingKode(kodeKarya);
     setBtProgress(null);
     try {
+      const cfg = await ensureBtConnected();
       const printer = await printSingleViaBluetooth({
         kodeKarya,
-        wMm: safeWMm,
-        hMm: safeHMm,
-        rotate90,
+        wMm: cfg.wMm,
+        hMm: cfg.hMm,
+        rotate90: cfg.rotate90,
         logo: logoVariant,
         density: btDensity,
         offsetXOverride: btOffsetX,
@@ -242,12 +241,13 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
     setBtBusy(true);
     setBtProgress({ current: 0, total: selectedFilteredItems.length });
     try {
+      const cfg = await ensureBtConnected();
       const kodeList = selectedFilteredItems.map((it) => it.kodeKarya);
       const printer = await printBatchViaBluetooth({
         kodeList,
-        wMm: safeWMm,
-        hMm: safeHMm,
-        rotate90,
+        wMm: cfg.wMm,
+        hMm: cfg.hMm,
+        rotate90: cfg.rotate90,
         logo: logoVariant,
         density: btDensity,
         offsetXOverride: btOffsetX,
@@ -273,7 +273,6 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
     }
   };
 
-  const firstTestItem = selectedFilteredItems[0] ?? filteredItems[0];
   const isRangeAll = fromSlot === "1" && toSlot === String(items.length || 75);
 
   return (
@@ -282,7 +281,9 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
       <Script src="/vendor/niimbot.js" strategy="afterInteractive" />
 
       {/* Dynamic Print Stylesheet */}
-      <style>{`
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @media print {
           @page {
             ${presetKey === "a4" ? "size: A4 portrait; margin: 8mm;" : `size: ${safeWMm}mm ${safeHMm}mm; margin: 0;`}
@@ -361,7 +362,9 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
             `
           }
         }
-      `}</style>
+      `,
+        }}
+      />
 
       {/* PANEL KONTROL COMPACT & RESPONSIF HP */}
       <div className="no-print space-y-2.5 sm:space-y-3">
@@ -408,20 +411,11 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
 
         {/* Toolbar Utama 1 Kotak (Mudah Dipakai di HP & Desktop) */}
         <div className="rounded-xl border border-line bg-panel p-2.5 sm:p-3 shadow-lg space-y-2.5">
-          {/* Baris 1: Printer Bluetooth + Pilihan Logo + Tombol Cetak */}
+          {/* Baris 1: Status Printer Bluetooth (jika terhubung) + Tombol Cetak */}
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            {/* Kiri: Tombol Hubungkan Printer + Segmented Logo */}
+            {/* Kiri: Status Printer Bluetooth (muncul setelah terhubung) */}
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              {!btConn ? (
-                <button
-                  type="button"
-                  disabled={btBusy || !btSupport.ok}
-                  onClick={handleBtConnect}
-                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-sky-400 disabled:opacity-50 transition-colors"
-                >
-                  {btBusy ? "Menghubungkan…" : "Hubungkan Printer Bluetooth"}
-                </button>
-              ) : (
+              {btConn && (
                 <div className="flex w-full sm:w-auto items-center justify-between gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs">
                   <span className="font-bold text-emerald-300 truncate">
                     ● {btConn.printer.label}
@@ -450,7 +444,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                 </div>
               )}
 
-              {/* Pemilih Logo Compact (Full-width 2 kolom di HP, inline di desktop) */}
+              {/* Pemilih Logo Compact — disembunyikan sementara, aktifkan lagi jika diperlukan
               <div
                 className="grid w-full sm:w-auto grid-cols-2 sm:inline-flex items-center rounded-lg border border-line bg-surface p-0.5 text-xs"
                 role="group"
@@ -479,28 +473,16 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
                   MBtech Bulat
                 </button>
               </div>
+              */}
             </div>
 
-            {/* Kanan: Tombol Cetak Utama (2 kolom rapi di HP) */}
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-              {firstTestItem && (
-                <button
-                  type="button"
-                  disabled={btBusy || !btSupport.ok}
-                  onClick={() => handleBtPrintSingle(firstTestItem.kodeKarya)}
-                  className="inline-flex items-center justify-center rounded-lg border border-sky-500/50 bg-sky-500/10 px-3 py-2 text-xs font-bold text-sky-300 hover:bg-sky-500/20 disabled:opacity-50 transition-colors"
-                  title="Coba cetak 1 stiker dulu untuk memastikan hasil rapi"
-                >
-                  Tes 1 ({firstTestItem.kodeKarya})
-                </button>
-              )}
+            {/* Kanan: Tombol Cetak Utama */}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={btBusy || !btSupport.ok || selectedFilteredItems.length === 0}
                 onClick={handleBtPrintContinuous}
-                className={`inline-flex items-center justify-center rounded-lg bg-gradient-to-b from-[#ffeaae] via-[#f3be4d] to-[#cf9324] border border-[#fff2c8] px-3.5 py-2 text-xs font-bold text-[#141006] shadow-md hover:brightness-105 disabled:opacity-50 transition-all ${
-                  firstTestItem ? "" : "col-span-2"
-                }`}
+                className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-gradient-to-b from-[#ffeaae] via-[#f3be4d] to-[#cf9324] border border-[#fff2c8] px-4 py-2 text-xs font-bold text-[#141006] shadow-md hover:brightness-105 disabled:opacity-50 transition-all"
               >
                 {btBusy && btPrintingKode == null
                   ? "Mencetak…"
@@ -788,7 +770,7 @@ export function LabelPrintClient({ items }: LabelPrintClientProps) {
             </div>
 
             <p className="border-t border-line/50 pt-2 text-[11px] text-muted">
-              <b>Cara pakai:</b> 1) Klik <b>Hubungkan Printer</b> → 2) Pilih <b>Logo RWSA</b> atau <b>MBtech Bulat</b> → 3) Klik kartu untuk centang nomor → 4) Klik <b>Tes 1</b> lalu <b>Cetak</b>.
+              <b>Cara pakai:</b> 1) Klik kartu untuk memilih nomor yang ingin dicetak → 2) Klik <b>Cetak</b> (jika printer belum terhubung, jendela pairing Bluetooth akan muncul otomatis).
             </p>
           </div>
         )}

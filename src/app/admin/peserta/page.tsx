@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/dal";
 import { PageTitle } from "@/components/Shell";
 import { AdminPesertaTable, type AdminPesertaItem } from "./AdminPesertaTable";
+import { PesertaSlotControl } from "./PesertaSlotControl";
 
 export const metadata = { title: "Kelola Peserta" };
 
@@ -34,6 +35,8 @@ export default async function PesertaIndexPage() {
           </Link>
         }
       />
+
+      <PesertaSlotControl currentTotal={items.length} />
 
       <AdminPesertaTable items={items} />
     </main>

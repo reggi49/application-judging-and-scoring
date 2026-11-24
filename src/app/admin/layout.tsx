@@ -9,6 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         home="/admin"
         userLabel={u.username}
         roleLabel="Administrator"
+        enableSecretReset
         nav={[
           { href: "/admin", label: "Ranking Live" },
           { href: "/admin/karya", label: "Karya" },

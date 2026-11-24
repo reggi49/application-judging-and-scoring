@@ -231,3 +231,65 @@ export async function unlockPenilaian(penilaianId: number, actorUserId: number) 
     return true;
   });
 }
+
+export type ReopenResult =
+  | { ok: true; state: PenilaianState }
+  | { ok: false; code: "FASE" | "KARYA" | "JURI" | "NOT_FOUND"; message: string };
+
+/** Juri/Admin membuka kembali nilai FINAL untuk dikoreksi selama fase PENJURIAN aktif. */
+export async function reopenPenilaian(input: {
+  juriId: number;
+  kodeKarya: string;
+  actorUserId: number;
+}): Promise<ReopenResult> {
+  const event = await getEvent();
+  if (event.fase !== "PENJURIAN") {
+    return { ok: false, code: "FASE", message: `Penjurian tidak sedang dibuka (fase: ${event.fase}).` };
+  }
+
+  const juri = await db.juri.findUnique({ where: { id: input.juriId }, include: { user: true } });
+  if (!juri || juri.deletedAt || !juri.isActive || !juri.user.isActive) {
+    return { ok: false, code: "JURI", message: "Juri tidak aktif." };
+  }
+
+  const karya = await db.karya.findFirst({
+    where: { kodeKarya: input.kodeKarya, deletedAt: null, peserta: { deletedAt: null } },
+  });
+  if (!karya) return { ok: false, code: "KARYA", message: "Karya tidak ditemukan." };
+
+  return db.$transaction(async (tx): Promise<ReopenResult> => {
+    const cur = await tx.penilaian.findUnique({
+      where: { juriId_karyaId: { juriId: juri.id, karyaId: karya.id } },
+      include: { detail: { include: { kriteria: true } } },
+    });
+    if (!cur) {
+      return { ok: false, code: "NOT_FOUND", message: "Data penilaian tidak ditemukan." };
+    }
+    if (cur.status !== "FINAL") {
+      return { ok: true, state: toState(cur) };
+    }
+
+    await tx.penilaian.update({
+      where: { id: cur.id },
+      data: {
+        status: "DRAFT",
+        skorJuri: null,
+        finalizedAt: null,
+        version: { increment: 1 },
+      },
+    });
+
+    const state = await stateOf(tx, cur.id);
+    await tx.penilaianHistory.create({
+      data: {
+        penilaianId: cur.id,
+        juriId: juri.id,
+        karyaId: karya.id,
+        aksi: "KOREKSI",
+        snapshot: state as unknown as Prisma.InputJsonValue,
+        actorUserId: input.actorUserId,
+      },
+    });
+    return { ok: true, state };
+  });
+}
