@@ -100,6 +100,7 @@ export function PenilaianPanel(p: PanelProps) {
   const [deskripsi, setDeskripsi] = useState(karya.deskripsi || "");
   const [showDeskripsi, setShowDeskripsi] = useState(false);
   const [savingInfo, setSavingInfo] = useState(false);
+  const [infoDirty, setInfoDirty] = useState(false);
   const [infoNotice, setInfoNotice] = useState<string | null>(null);
   const dirtyInfoRef = useRef(false);
 
@@ -116,16 +117,26 @@ export function PenilaianPanel(p: PanelProps) {
   const valuesRef = useRef(values);
   const catatanRef = useRef(catatan);
   const statusRef = useRef(status);
+  const namaRef = useRef(namaInput);
+  const whatsappRef = useRef(whatsapp);
+  const deskripsiRef = useRef(deskripsi);
+  const showDeskripsiRef = useRef(showDeskripsi);
   const syncingRef = useRef(false);
   const failRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const infoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncNowRef = useRef<() => void>(() => {});
+  const syncInfoNowRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
     valuesRef.current = values;
     catatanRef.current = catatan;
     statusRef.current = status;
-  }, [values, catatan, status]);
+    namaRef.current = namaInput;
+    whatsappRef.current = whatsapp;
+    deskripsiRef.current = deskripsi;
+    showDeskripsiRef.current = showDeskripsi;
+  }, [values, catatan, status, namaInput, whatsapp, deskripsi, showDeskripsi]);
 
   const canEdit = p.fase === "PENJURIAN" && status !== "FINAL";
 
@@ -152,6 +163,10 @@ export function PenilaianPanel(p: PanelProps) {
         catatan: catatanRef.current,
         clientUpdatedAt: tsRef.current,
         dirty,
+        nama: namaRef.current,
+        whatsapp: whatsappRef.current,
+        deskripsi: deskripsiRef.current,
+        showDeskripsi: showDeskripsiRef.current,
       }),
     [storageKey],
   );
@@ -164,14 +179,25 @@ export function PenilaianPanel(p: PanelProps) {
       setSkorFinal(s.skorJuri);
       tsRef.current = Math.max(tsRef.current, s.clientUpdatedAt);
       dirtyRef.current = false;
-      removeDraft(storageKey);
+      if (!dirtyInfoRef.current) {
+        removeDraft(storageKey);
+      } else {
+        void persistLocal(false);
+      }
     },
-    [kriteria, storageKey],
+    [kriteria, storageKey, persistLocal],
   );
 
   const scheduleSync = useCallback((delay: number) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => syncNowRef.current(), delay);
+  }, []);
+
+  const scheduleInfoSync = useCallback((delay: number) => {
+    if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
+    infoTimerRef.current = setTimeout(() => {
+      void syncInfoNowRef.current();
+    }, delay);
   }, []);
 
   /** Kirim draft ke server. Aman diulang (idempoten); data lama tidak menimpa data baru. */
@@ -185,6 +211,9 @@ export function PenilaianPanel(p: PanelProps) {
     setSync("saving");
     const sentTs = tsRef.current;
     try {
+      if (dirtyInfoRef.current) {
+        void syncInfoNowRef.current();
+      }
       const res = await fetch(p.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -269,14 +298,42 @@ export function PenilaianPanel(p: PanelProps) {
         dirtyRef.current = true;
         setSync(navigator.onLine ? "pending" : "offline");
         scheduleSync(300);
-      } else if (local) {
+      } else if (local && !local.dirty) {
         removeDraft(storageKey);
+      }
+
+      if (local) {
+        if (typeof local.nama === "string" && local.nama !== "") {
+          setNamaInput(local.nama);
+          namaRef.current = local.nama;
+        }
+        if (typeof local.whatsapp === "string" && local.whatsapp !== "") {
+          setWhatsapp(local.whatsapp);
+          whatsappRef.current = local.whatsapp;
+        }
+        if (typeof local.deskripsi === "string" && local.deskripsi !== "") {
+          setDeskripsi(local.deskripsi);
+          deskripsiRef.current = local.deskripsi;
+        }
+        if (typeof local.showDeskripsi === "boolean") {
+          setShowDeskripsi(local.showDeskripsi);
+          showDeskripsiRef.current = local.showDeskripsi;
+        }
+        if (local.dirty) {
+          dirtyInfoRef.current = true;
+          setInfoDirty(true);
+          scheduleInfoSync(300);
+        }
       }
       setReady(true);
     })();
     return () => {
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
+      if (dirtyInfoRef.current) {
+        void persistLocal(true);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
@@ -285,9 +342,10 @@ export function PenilaianPanel(p: PanelProps) {
   useEffect(() => {
     const trigger = () => {
       if (dirtyRef.current) syncNowRef.current();
+      if (dirtyInfoRef.current) void syncInfoNowRef.current();
     };
     const onOffline = () => {
-      if (dirtyRef.current) setSync("offline");
+      if (dirtyRef.current || dirtyInfoRef.current) setSync("offline");
     };
     const onVisible = () => document.visibilityState === "visible" && trigger();
     window.addEventListener("online", trigger);
@@ -295,7 +353,7 @@ export function PenilaianPanel(p: PanelProps) {
     document.addEventListener("visibilitychange", onVisible);
     const iv = setInterval(trigger, 15_000);
     const beforeUnload = (e: BeforeUnloadEvent) => {
-      if (dirtyRef.current) {
+      if (dirtyRef.current || dirtyInfoRef.current) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -425,6 +483,9 @@ export function PenilaianPanel(p: PanelProps) {
     if (timerRef.current) clearTimeout(timerRef.current);
     try {
       if (!navigator.onLine) throw new Error("OFFLINE");
+      if (dirtyInfoRef.current) {
+        await syncInfoNow();
+      }
       const res = await fetch(p.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -463,19 +524,22 @@ export function PenilaianPanel(p: PanelProps) {
     }
   };
 
-  const saveInfo = async () => {
-    if (!karya.id) return;
+  const syncInfoNow = useCallback(async () => {
+    if (!karya.id || !dirtyInfoRef.current) return;
+    if (!navigator.onLine) {
+      setSync("offline");
+      return;
+    }
     setSavingInfo(true);
     setInfoNotice(null);
-    const cleanWa = whatsapp.replace(/\D/g, "").slice(0, 25);
-    setWhatsapp(cleanWa);
+    const cleanWa = (whatsappRef.current ?? "").replace(/\D/g, "").slice(0, 25);
     try {
       const payload: { nama: string; whatsapp: string; deskripsi?: string } = {
-        nama: namaInput.trim(),
+        nama: (namaRef.current ?? "").trim(),
         whatsapp: cleanWa,
       };
-      if (showDeskripsi) {
-        payload.deskripsi = deskripsi.trim();
+      if (showDeskripsiRef.current) {
+        payload.deskripsi = (deskripsiRef.current ?? "").trim();
       }
       const res = await fetch(`/api/admin/karya/${karya.id}/foto`, {
         method: "PATCH",
@@ -485,21 +549,44 @@ export function PenilaianPanel(p: PanelProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan data");
       dirtyInfoRef.current = false;
+      setInfoDirty(false);
       if (typeof data.peserta === "string" || typeof data.nama === "string") {
-        setNamaInput(extractDisplayName(data.peserta ?? "", data.nama ?? ""));
+        const dName = extractDisplayName(data.peserta ?? "", data.nama ?? "");
+        setNamaInput(dName);
+        namaRef.current = dName;
       }
-      if (typeof data.whatsapp === "string") setWhatsapp(data.whatsapp);
-      if (typeof data.deskripsi === "string") setDeskripsi(data.deskripsi);
-      setInfoNotice("✓ Data peserta & nomor WA tersimpan (otomatis sama di semua juri)");
-      router.refresh();
-      setTimeout(() => setInfoNotice(null), 3500);
+      if (typeof data.whatsapp === "string") {
+        setWhatsapp(data.whatsapp);
+        whatsappRef.current = data.whatsapp;
+      }
+      if (typeof data.deskripsi === "string") {
+        setDeskripsi(data.deskripsi);
+        deskripsiRef.current = data.deskripsi;
+      }
+      await persistLocal(dirtyRef.current);
+      if (!dirtyRef.current) {
+        setSync("saved");
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyimpan";
       setInfoNotice(`✕ ${msg}`);
     } finally {
       setSavingInfo(false);
     }
-  };
+  }, [karya.id, persistLocal]);
+
+  useEffect(() => {
+    syncInfoNowRef.current = syncInfoNow;
+  }, [syncInfoNow]);
+
+  const markInfoChanged = useCallback(() => {
+    dirtyInfoRef.current = true;
+    setInfoDirty(true);
+    nextTs();
+    void persistLocal(true);
+    setSync(navigator.onLine ? "pending" : "offline");
+    scheduleInfoSync(700);
+  }, [persistLocal, scheduleInfoSync]);
 
   const reopenForEdit = async () => {
     if (reopening || p.fase !== "PENJURIAN") return;
@@ -612,7 +699,14 @@ export function PenilaianPanel(p: PanelProps) {
     <div className="mx-auto max-w-7xl px-4 pb-40 pt-4 md:pb-10">
       {/* Header karya — ID besar agar tidak salah karya */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link href={p.backHref} className="btn btn-ghost btn-sm">
+        <Link
+          href={p.backHref}
+          className="btn btn-ghost btn-sm"
+          onClick={() => {
+            if (dirtyRef.current) syncNowRef.current();
+            if (dirtyInfoRef.current) void syncInfoNowRef.current();
+          }}
+        >
           ‹ Daftar karya
         </Link>
         <span className={`badge ${syncBadge.cls}`} role="status" aria-live="polite">
@@ -657,9 +751,24 @@ export function PenilaianPanel(p: PanelProps) {
                   #{karya.kode}
                 </h1>
               </div>
-              <span className="rounded-full bg-ok/20 border border-ok/50 px-2.5 py-0.5 text-[10px] font-bold text-[#a3f7bf]">
-                Berbagi ke semua juri
-              </span>
+              <div className="flex flex-col items-end gap-1">
+                <span className="rounded-full bg-ok/20 border border-ok/50 px-2.5 py-0.5 text-[10px] font-bold text-[#a3f7bf]">
+                  Berbagi ke semua juri
+                </span>
+                {savingInfo ? (
+                  <span className="text-[10px] font-semibold text-gold-light animate-pulse">
+                    Menyimpan draft…
+                  </span>
+                ) : infoDirty ? (
+                  <span className="text-[10px] font-semibold text-warn">
+                    Draft lokal tersimpan
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-[#8bf7ad]">
+                    ✓ Tersimpan otomatis
+                  </span>
+                )}
+              </div>
             </div>
 
             {infoNotice && (
@@ -679,8 +788,13 @@ export function PenilaianPanel(p: PanelProps) {
                   maxLength={150}
                   value={namaInput}
                   onChange={(e) => {
-                    dirtyInfoRef.current = true;
-                    setNamaInput(e.target.value);
+                    const val = e.target.value;
+                    setNamaInput(val);
+                    namaRef.current = val;
+                    markInfoChanged();
+                  }}
+                  onBlur={() => {
+                    if (dirtyInfoRef.current) void syncInfoNowRef.current();
                   }}
                   placeholder="Masukkan nama peserta / pemilik motor"
                   className="input text-sm font-semibold"
@@ -700,8 +814,13 @@ export function PenilaianPanel(p: PanelProps) {
                   maxLength={25}
                   value={whatsapp}
                   onChange={(e) => {
-                    dirtyInfoRef.current = true;
-                    setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 25));
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 25);
+                    setWhatsapp(val);
+                    whatsappRef.current = val;
+                    markInfoChanged();
+                  }}
+                  onBlur={() => {
+                    if (dirtyInfoRef.current) void syncInfoNowRef.current();
                   }}
                   placeholder="08xxxxxxxxxx (angka saja)"
                   className="input num text-sm font-semibold"
@@ -713,7 +832,12 @@ export function PenilaianPanel(p: PanelProps) {
                   <input
                     type="checkbox"
                     checked={showDeskripsi}
-                    onChange={(e) => setShowDeskripsi(e.target.checked)}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setShowDeskripsi(val);
+                      showDeskripsiRef.current = val;
+                      markInfoChanged();
+                    }}
                     className="h-4 w-4 accent-gold cursor-pointer rounded"
                   />
                   <span>Tampilkan Deskripsi Modifikasi</span>
@@ -737,24 +861,16 @@ export function PenilaianPanel(p: PanelProps) {
                     className="input text-sm font-semibold w-full leading-relaxed p-3 shadow-inner"
                     value={deskripsi}
                     onChange={(e) => {
-                      dirtyInfoRef.current = true;
-                      setDeskripsi(e.target.value);
+                      const val = e.target.value;
+                      setDeskripsi(val);
+                      deskripsiRef.current = val;
+                      markInfoChanged();
+                    }}
+                    onBlur={() => {
+                      if (dirtyInfoRef.current) void syncInfoNowRef.current();
                     }}
                     placeholder="Bahan MBtech Giorgio & Carrera, motif diamond stitch, benang merah, busa latex custom..."
                   />
-                </div>
-              )}
-
-              {karya.id && (
-                <div className="pt-1 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={saveInfo}
-                    disabled={savingInfo}
-                    className="btn btn-gold btn-sm w-full sm:w-auto px-5 text-xs font-extrabold shadow-md"
-                  >
-                    {savingInfo ? "Menyimpan…" : "Simpan Data Slot"}
-                  </button>
                 </div>
               )}
             </div>
@@ -849,12 +965,35 @@ export function PenilaianPanel(p: PanelProps) {
                 <Gallery fotos={fotos} alt={namaInput || karya.nama} />
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-line/80 bg-panel2/40 p-6 text-center">
-                <p className="text-sm font-bold text-white">Belum ada foto motor</p>
-                <p className="text-xs text-[#ded7c8] mt-1 max-w-xs mx-auto">
-                  Gunakan tombol <strong>&quot;Kamera&quot;</strong> di atas untuk mengambil gambar jok motor langsung di venue acara.
+              <button
+                type="button"
+                disabled={uploadingFoto}
+                onClick={() => cameraInputRef.current?.click()}
+                className="group w-full rounded-2xl border-2 border-dashed border-gold/40 bg-gradient-to-b from-panel2/90 to-[#1b1915] p-7 text-center transition-all hover:border-gold hover:bg-gold/10 hover:shadow-xl hover:shadow-gold/10 active:scale-[0.99] cursor-pointer"
+                title="Buka kamera untuk foto unit motor"
+              >
+                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/15 border-2 border-gold/50 text-gold-light group-hover:scale-110 group-hover:bg-gold group-hover:text-ink group-hover:border-gold transition-all shadow-md">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
+                </div>
+                <p className="font-title text-base font-bold text-white group-hover:text-gold-light transition-colors">
+                  Ambil Foto Motor
                 </p>
-              </div>
+                <p className="mt-1 text-xs font-semibold text-[#ded7c8] group-hover:text-white transition-colors">
+                  Klik di sini untuk langsung membuka kamera smartphone
+                </p>
+              </button>
             )}
           </div>
         </section>

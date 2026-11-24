@@ -7,6 +7,10 @@ export type LocalDraft = {
   catatan: string;
   clientUpdatedAt: number;
   dirty: boolean; // true = belum terkonfirmasi tersimpan di server
+  nama?: string;
+  whatsapp?: string;
+  deskripsi?: string;
+  showDeskripsi?: boolean;
 };
 
 class RwsaLocalDb extends Dexie {
