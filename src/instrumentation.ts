@@ -1,10 +1,27 @@
 /**
- * Dipanggil sekali saat server Node start. Menjadwalkan backup otomatis bila
- * BACKUP_AUTO_MINUTES diset (mis. 60 = tiap jam). Untuk produksi disarankan
- * juga cron sistem (`npm run backup`) sebagai lapisan kedua.
+ * Dipanggil sekali saat server Node start:
+ * 1. Memastikan skema SQLite (mis. kolom baru seperti `karya.whatsapp`) otomatis
+ *    ditambahkan tanpa perlu `npx prisma migrate` di server hosting.
+ * 2. Menjadwalkan backup otomatis bila BACKUP_AUTO_MINUTES diset.
  */
+async function ensureSqliteSchema() {
+  try {
+    const { db } = await import("./lib/db");
+    const cols = await db.$queryRawUnsafe<{ name: string }[]>('PRAGMA table_info("karya")');
+    if (cols.length > 0 && !cols.some((c) => c.name === "whatsapp")) {
+      await db.$executeRawUnsafe('ALTER TABLE "karya" ADD COLUMN "whatsapp" TEXT;');
+      console.log("[migrate] Kolom karya.whatsapp berhasil ditambahkan otomatis.");
+    }
+  } catch (e) {
+    console.error("[migrate] Gagal memeriksa/memperbarui skema SQLite:", e instanceof Error ? e.message : e);
+  }
+}
+
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+
+  await ensureSqliteSchema();
+
   const minutes = Number(process.env.BACKUP_AUTO_MINUTES ?? 0);
   if (!minutes || minutes < 1) return;
 
@@ -24,4 +41,3 @@ export async function register() {
   g.__backupTimer = setInterval(tick, minutes * 60_000);
   g.__backupTimer.unref?.();
 }
-

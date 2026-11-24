@@ -31,6 +31,7 @@ async function run() {
   }
 
   log("1. Memulai build Next.js PWA (Standalone)...");
+  execSync("npx prisma generate", { stdio: "inherit", cwd: ROOT });
   execSync("npm run build", { stdio: "inherit", cwd: ROOT });
 
   log("2. Menyiapkan folder staging distribusi...");

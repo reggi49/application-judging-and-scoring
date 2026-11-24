@@ -3,7 +3,7 @@
  * Yang di-cache: aset statis build (/_next/static), ikon, dan halaman offline.
  * Draft nilai juri disimpan oleh aplikasi sendiri di IndexedDB (bukan oleh service worker).
  */
-const VERSION = "rwsa-20261121-112859";
+const VERSION = "rwsa-20261124-161246";
 const STATIC_CACHE = `${VERSION}-static`;
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [
