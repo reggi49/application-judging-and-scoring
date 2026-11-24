@@ -11,6 +11,7 @@ export type AdminKaryaItem = {
   namaKarya: string;
   pesertaNama: string;
   pesertaKode: string;
+  whatsapp: string | null;
   coverFotoId: number | null;
   fotoCount: number;
   penilaianCount: number;
@@ -46,7 +47,8 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
         it.kodeKarya.toLowerCase().includes(needle) ||
         it.namaKarya.toLowerCase().includes(needle) ||
         it.pesertaNama.toLowerCase().includes(needle) ||
-        it.pesertaKode.toLowerCase().includes(needle)
+        it.pesertaKode.toLowerCase().includes(needle) ||
+        (it.whatsapp ?? "").includes(needle)
       );
     });
   }, [items, q, filter]);
@@ -195,7 +197,9 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
                   </td>
                   <td>
                     <div className="font-semibold text-white">{k.pesertaNama}</div>
-                    <div className="text-xs text-gold-light font-semibold">({k.pesertaKode})</div>
+                    <div className="text-xs text-gold-light font-semibold">
+                      ({k.pesertaKode}){k.whatsapp ? ` · WA: ${k.whatsapp}` : ""}
+                    </div>
                   </td>
                   <td className="num text-center">
                     <span className={`badge ${k.fotoCount > 0 ? "badge-gold" : "badge-warn"}`}>
@@ -277,9 +281,14 @@ export function AdminKaryaTable({ items }: { items: AdminKaryaItem[] }) {
                   </h3>
 
                   <p className="text-xs text-[#ded7c8] mt-0.5 line-clamp-1">
-                    Bengkel: <strong className="text-white">{k.pesertaNama}</strong>{" "}
+                    Nama: <strong className="text-white">{k.pesertaNama}</strong>{" "}
                     <span className="text-gold-light">({k.pesertaKode})</span>
                   </p>
+                  {k.whatsapp && (
+                    <p className="num text-[11px] font-semibold text-ok mt-0.5">
+                      WA: {k.whatsapp}
+                    </p>
+                  )}
                 </div>
               </div>
 

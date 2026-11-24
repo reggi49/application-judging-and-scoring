@@ -3,6 +3,7 @@ import { requireJuri } from "@/lib/dal";
 import { getEvent } from "@/lib/event";
 import { JuriKaryaList } from "./JuriKaryaList";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Daftar Karya" };
 
 export default async function JuriHomePage() {
@@ -33,6 +34,7 @@ export default async function JuriHomePage() {
       nama: k.namaKarya,
       peserta: k.peserta.nama,
       kodePeserta: k.peserta.kodePeserta,
+      whatsapp: k.whatsapp,
       coverId: k.gambar[0]?.id ?? null,
       status: (p?.status ?? "BELUM") as "BELUM" | "DRAFT" | "FINAL",
       skor: p?.skorJuri ? p.skorJuri.toFixed(2).replace(".", ",") : null,

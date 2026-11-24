@@ -5,6 +5,8 @@ import { getEvent, loadKriteria } from "@/lib/event";
 import { getPenilaianState } from "@/lib/penilaian";
 import { PenilaianPanel } from "@/components/PenilaianPanel";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ kode: string }> }) {
   const kode = (await params).kode;
   return { title: `Nilai ${kode}` };
@@ -33,6 +35,7 @@ export default async function JuriNilaiPage({ params }: { params: Promise<{ kode
   return (
     <main>
       <PenilaianPanel
+        key={karya.kodeKarya}
         mode="juri"
         scope={`juri-${juri.id}`}
         endpoint="/api/juri/penilaian"
@@ -42,6 +45,7 @@ export default async function JuriNilaiPage({ params }: { params: Promise<{ kode
           nama: karya.namaKarya,
           peserta: karya.peserta.nama,
           kodePeserta: karya.peserta.kodePeserta,
+          whatsapp: karya.whatsapp,
           deskripsi: karya.deskripsi,
           fotos: karya.gambar,
         }}

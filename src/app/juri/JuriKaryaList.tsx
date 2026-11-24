@@ -11,6 +11,7 @@ type Item = {
   nama: string;
   peserta: string;
   kodePeserta: string;
+  whatsapp?: string | null;
   coverId: number | null;
   status: "BELUM" | "DRAFT" | "FINAL";
   skor: string | null;
@@ -70,7 +71,8 @@ export function JuriKaryaList({
         it.kode.toLowerCase().includes(needle) ||
         it.nama.toLowerCase().includes(needle) ||
         it.peserta.toLowerCase().includes(needle) ||
-        it.kodePeserta.toLowerCase().includes(needle)
+        it.kodePeserta.toLowerCase().includes(needle) ||
+        (it.whatsapp ?? "").includes(needle)
       );
     });
   }, [items, q, filter]);
@@ -371,6 +373,11 @@ export function JuriKaryaList({
                       <p className="mt-1 text-xs font-semibold text-[#ded7c8] line-clamp-1">
                         {it.peserta} <span className="text-gold-light font-bold">({it.kodePeserta})</span>
                       </p>
+                      {it.whatsapp && (
+                        <p className="num text-[11px] font-semibold text-ok mt-0.5 truncate">
+                          WA: {it.whatsapp}
+                        </p>
+                      )}
 
                       <div className="mt-2">
                         {isFinal && (

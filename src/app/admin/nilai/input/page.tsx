@@ -47,6 +47,7 @@ export default async function AdminInputNilaiPage({
     return (
       <main>
         <PenilaianPanel
+          key={`${selectedJuri.id}-${karyaDetail.kodeKarya}`}
           mode="admin"
           onBehalfOf={`${selectedJuri.nama} (${selectedJuri.kodeJuri})`}
           scope={`admin-${admin.id}-for-${selectedJuri.id}`}
@@ -57,6 +58,7 @@ export default async function AdminInputNilaiPage({
             nama: karyaDetail.namaKarya,
             peserta: karyaDetail.peserta.nama,
             kodePeserta: karyaDetail.peserta.kodePeserta,
+            whatsapp: karyaDetail.whatsapp,
             deskripsi: karyaDetail.deskripsi,
             fotos: karyaDetail.gambar,
           }}

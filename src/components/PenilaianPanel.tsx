@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Gallery } from "@/components/Gallery";
 import { loadDraft, removeDraft, saveDraft } from "@/lib/local-draft";
@@ -20,6 +21,7 @@ export type PanelProps = {
     nama: string;
     peserta: string;
     kodePeserta: string;
+    whatsapp?: string | null;
     deskripsi: string | null;
     fotos: { id: number }[];
   };
@@ -66,7 +68,16 @@ function toInputs(kriteria: KriteriaView[], nilai: Record<string, number>) {
   return v;
 }
 
+function extractDisplayName(peserta: string, nama: string): string {
+  const isDefaultPeserta = /^Peserta\s*#?\d+$/i.test(peserta.trim());
+  const isDefaultKarya = /^Nomor\s*\d+$/i.test(nama.trim());
+  if (!isDefaultPeserta && peserta.trim()) return peserta;
+  if (!isDefaultKarya && nama.trim()) return nama;
+  return "";
+}
+
 export function PenilaianPanel(p: PanelProps) {
+  const router = useRouter();
   const { kriteria, karya } = p;
   const storageKey = `${p.scope}:${karya.kode}`;
 
@@ -81,14 +92,15 @@ export function PenilaianPanel(p: PanelProps) {
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
-  // Fitur Konsep Baru: Kelola Foto & Info Motor Slot
+  // Fitur Konsep Baru: Kelola Foto & Info Motor Slot (Nama, WhatsApp angka-only, Deskripsi tersembunyi di balik checklist)
   const [fotos, setFotos] = useState<{ id: number }[]>(karya.fotos);
-  const [namaKarya, setNamaKarya] = useState(karya.nama);
-  const [namaPeserta, setNamaPeserta] = useState(karya.peserta);
+  const [namaInput, setNamaInput] = useState(() => extractDisplayName(karya.peserta, karya.nama));
+  const [whatsapp, setWhatsapp] = useState(() => (karya.whatsapp ?? "").replace(/\D/g, ""));
   const [deskripsi, setDeskripsi] = useState(karya.deskripsi || "");
-  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [showDeskripsi, setShowDeskripsi] = useState(false);
   const [savingInfo, setSavingInfo] = useState(false);
   const [infoNotice, setInfoNotice] = useState<string | null>(null);
+  const dirtyInfoRef = useRef(false);
 
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const [fotoNotice, setFotoNotice] = useState<string | null>(null);
@@ -293,6 +305,52 @@ export function PenilaianPanel(p: PanelProps) {
     };
   }, []);
 
+  /* Sinkronkan data bersama (Nama, WhatsApp, Deskripsi, Foto) antar seluruh juri */
+  const fetchSharedInfo = useCallback(async () => {
+    if (!karya.id || !navigator.onLine) return;
+    try {
+      const res = await fetch(`/api/admin/karya/${karya.id}/foto`, {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = (await res.json().catch(() => null)) as {
+        nama?: string;
+        peserta?: string;
+        whatsapp?: string;
+        deskripsi?: string;
+        fotos?: { id: number }[];
+      } | null;
+      if (!data) return;
+      if (Array.isArray(data.fotos)) setFotos(data.fotos);
+      if (!dirtyInfoRef.current) {
+        setNamaInput(extractDisplayName(data.peserta ?? "", data.nama ?? ""));
+        setWhatsapp((data.whatsapp ?? "").replace(/\D/g, ""));
+        setDeskripsi(data.deskripsi ?? "");
+      }
+    } catch {
+      /* abaikan gangguan jaringan sementara */
+    }
+  }, [karya.id]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchSharedInfo();
+    }, 0);
+    const onFocusOrVis = () => {
+      if (document.visibilityState === "visible") void fetchSharedInfo();
+    };
+    window.addEventListener("focus", onFocusOrVis);
+    document.addEventListener("visibilitychange", onFocusOrVis);
+    const sharedIv = setInterval(() => void fetchSharedInfo(), 10_000);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", onFocusOrVis);
+      document.removeEventListener("visibilitychange", onFocusOrVis);
+      clearInterval(sharedIv);
+    };
+  }, [fetchSharedInfo]);
+
   const markChanged = useCallback(() => {
     nextTs();
     dirtyRef.current = true;
@@ -404,18 +462,31 @@ export function PenilaianPanel(p: PanelProps) {
     if (!karya.id) return;
     setSavingInfo(true);
     setInfoNotice(null);
+    const cleanWa = whatsapp.replace(/\D/g, "").slice(0, 25);
+    setWhatsapp(cleanWa);
     try {
+      const payload: { nama: string; whatsapp: string; deskripsi?: string } = {
+        nama: namaInput.trim(),
+        whatsapp: cleanWa,
+      };
+      if (showDeskripsi) {
+        payload.deskripsi = deskripsi.trim();
+      }
       const res = await fetch(`/api/admin/karya/${karya.id}/foto`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deskripsi: deskripsi.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menyimpan deskripsi");
-      setInfoNotice("✓ Deskripsi berhasil disimpan (berbagi ke seluruh juri)");
-      setIsEditingInfo(false);
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan data");
+      dirtyInfoRef.current = false;
+      if (typeof data.peserta === "string" || typeof data.nama === "string") {
+        setNamaInput(extractDisplayName(data.peserta ?? "", data.nama ?? ""));
+      }
+      if (typeof data.whatsapp === "string") setWhatsapp(data.whatsapp);
+      if (typeof data.deskripsi === "string") setDeskripsi(data.deskripsi);
+      setInfoNotice("✓ Data peserta & nomor WA tersimpan (otomatis sama di semua juri)");
+      router.refresh();
       setTimeout(() => setInfoNotice(null), 3500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyimpan";
@@ -465,6 +536,7 @@ export function PenilaianPanel(p: PanelProps) {
       setFotoNotice(`✕ ${errMsg}`);
     } else if (successCount > 0) {
       setFotoNotice(`✓ Berhasil menambahkan ${successCount} foto.`);
+      router.refresh();
       setTimeout(() => setFotoNotice(null), 3500);
     }
   };
@@ -481,6 +553,7 @@ export function PenilaianPanel(p: PanelProps) {
       if (!res.ok) throw new Error(data.error || "Gagal menghapus foto");
       setFotos((prev) => prev.filter((f) => f.id !== fotoId));
       setFotoNotice("✓ Foto berhasil dihapus.");
+      router.refresh();
       setTimeout(() => setFotoNotice(null), 3500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menghapus foto";
@@ -530,7 +603,7 @@ export function PenilaianPanel(p: PanelProps) {
       <div className="grid gap-5 md:grid-cols-2 md:items-start lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         {/* Kolom kiri: identitas + pengelola info + galeri foto */}
         <section aria-labelledby="judul-karya">
-          {/* Card 1: Identitas Slot & Deskripsi Modifikasi Jok (Berbagi ke Seluruh Juri) */}
+          {/* Card 1: Identitas Slot (#001), Nama, No. WhatsApp, & Checklist Deskripsi */}
           <div className="card mb-4 p-5">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -539,15 +612,9 @@ export function PenilaianPanel(p: PanelProps) {
                   #{karya.kode}
                 </h1>
               </div>
-              {karya.id && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingInfo(!isEditingInfo)}
-                  className="btn btn-ghost btn-sm font-bold border border-gold/40 text-gold-light hover:bg-gold/20"
-                >
-                  {isEditingInfo ? "Tutup" : deskripsi ? "Ubah Deskripsi" : "+ Tambah Deskripsi"}
-                </button>
-              )}
+              <span className="rounded-full bg-ok/20 border border-ok/50 px-2.5 py-0.5 text-[10px] font-bold text-[#a3f7bf]">
+                Berbagi ke semua juri
+              </span>
             </div>
 
             {infoNotice && (
@@ -556,78 +623,96 @@ export function PenilaianPanel(p: PanelProps) {
               </div>
             )}
 
-            {isEditingInfo ? (
-              <div className="mt-4 space-y-3 rounded-xl border border-gold/40 bg-panel2 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold text-gold-light uppercase tracking-wider">
-                    Deskripsi Modifikasi Jok (Slot #{karya.kode})
-                  </p>
-                  <span className="rounded-full bg-ok/20 border border-ok/50 px-2 py-0.5 text-[10px] font-bold text-[#a3f7bf]">
-                    Berbagi ke semua juri
+            <div className="mt-4 space-y-3">
+              <div>
+                <label htmlFor={`nama-${karya.kode}`} className="mb-1 block text-xs font-bold uppercase tracking-wider text-gold-light">
+                  Nama
+                </label>
+                <input
+                  id={`nama-${karya.kode}`}
+                  type="text"
+                  maxLength={150}
+                  value={namaInput}
+                  onChange={(e) => {
+                    dirtyInfoRef.current = true;
+                    setNamaInput(e.target.value);
+                  }}
+                  placeholder="Masukkan nama peserta / pemilik motor"
+                  className="input text-sm font-semibold"
+                />
+              </div>
+
+              <div>
+                <label htmlFor={`wa-${karya.kode}`} className="mb-1 block text-xs font-bold uppercase tracking-wider text-gold-light">
+                  Nomor WhatsApp
+                </label>
+                <input
+                  id={`wa-${karya.kode}`}
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel-national"
+                  maxLength={25}
+                  value={whatsapp}
+                  onChange={(e) => {
+                    dirtyInfoRef.current = true;
+                    setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 25));
+                  }}
+                  placeholder="08xxxxxxxxxx (angka saja)"
+                  className="input num text-sm font-semibold"
+                />
+              </div>
+
+              <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-line bg-panel2/70 px-3 py-2.5 hover:border-gold/60 transition-colors">
+                <span className="flex items-center gap-2.5 text-xs font-bold text-white">
+                  <input
+                    type="checkbox"
+                    checked={showDeskripsi}
+                    onChange={(e) => setShowDeskripsi(e.target.checked)}
+                    className="h-4 w-4 accent-gold cursor-pointer rounded"
+                  />
+                  <span>Tampilkan Deskripsi Modifikasi</span>
+                </span>
+                {deskripsi.trim() !== "" && !showDeskripsi && (
+                  <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold-light">
+                    Terisi
                   </span>
-                </div>
+                )}
+              </label>
+
+              {showDeskripsi && (
                 <div>
+                  <label htmlFor={`desk-${karya.kode}`} className="mb-1 block text-xs font-bold uppercase tracking-wider text-gold-light">
+                    Deskripsi Modifikasi Jok
+                  </label>
                   <textarea
-                    rows={4}
+                    id={`desk-${karya.kode}`}
+                    rows={3}
+                    maxLength={2000}
                     className="input text-sm font-semibold w-full leading-relaxed p-3 shadow-inner"
                     value={deskripsi}
-                    onChange={(e) => setDeskripsi(e.target.value)}
+                    onChange={(e) => {
+                      dirtyInfoRef.current = true;
+                      setDeskripsi(e.target.value);
+                    }}
                     placeholder="Bahan MBtech Giorgio & Carrera, motif diamond stitch, benang merah, busa latex custom..."
-                    autoFocus
                   />
-                  <p className="mt-1.5 text-[11px] text-[#ded7c8]">
-                    Deskripsi ini otomatis tersimpan di server dan langsung terbaca oleh seluruh juri saat membuka slot #{karya.kode}.
-                  </p>
                 </div>
-                <div className="flex gap-2 justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingInfo(false)}
-                    className="btn btn-ghost btn-sm text-xs font-bold"
-                  >
-                    Batal
-                  </button>
+              )}
+
+              {karya.id && (
+                <div className="pt-1 flex justify-end">
                   <button
                     type="button"
                     onClick={saveInfo}
                     disabled={savingInfo}
-                    className="btn btn-gold btn-sm text-xs font-extrabold shadow-md"
+                    className="btn btn-gold btn-sm w-full sm:w-auto px-5 text-xs font-extrabold shadow-md"
                   >
-                    {savingInfo ? "Menyimpan…" : "Simpan Deskripsi"}
+                    {savingInfo ? "Menyimpan…" : "Simpan Data Slot"}
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gold-light">
-                    Deskripsi Modifikasi Jok
-                  </span>
-                  <span className="text-[11px] font-semibold text-ok flex items-center gap-1">
-                    Terbaca oleh semua juri
-                  </span>
-                </div>
-                {deskripsi ? (
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-white bg-panel2/80 p-3.5 rounded-xl border border-line shadow-inner">
-                    {deskripsi}
-                  </p>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-gold/40 bg-gold/10 p-4 text-center">
-                    <p className="text-xs font-bold text-white mb-1">Deskripsi modifikasi jok belum diisi</p>
-                    <p className="text-[11px] text-[#ded7c8] mb-3">
-                      Tekan tombol di bawah untuk mengisi spesifikasi bahan & modifikasi jok slot ini.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingInfo(true)}
-                      className="btn btn-gold btn-sm text-xs font-bold shadow-md"
-                    >
-                      + Tambah Deskripsi Modifikasi
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Card 2: Pengelola & Galeri Foto */}
@@ -716,7 +801,7 @@ export function PenilaianPanel(p: PanelProps) {
                     </div>
                   ))}
                 </div>
-                <Gallery fotos={fotos} alt={namaKarya} />
+                <Gallery fotos={fotos} alt={namaInput || karya.nama} />
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-line/80 bg-panel2/40 p-6 text-center">
