@@ -24,6 +24,7 @@ export default async function KaryaIndexPage() {
     namaKarya: k.namaKarya,
     pesertaNama: k.peserta.nama,
     pesertaKode: k.peserta.kodePeserta,
+    whatsapp: k.whatsapp,
     coverFotoId: k.gambar[0]?.id ?? null,
     fotoCount: k._count.gambar,
     penilaianCount: k._count.penilaian,

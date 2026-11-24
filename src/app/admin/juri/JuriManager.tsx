@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createJuriAction,
@@ -8,6 +8,7 @@ import {
   toggleJuriAction,
   deleteJuriAction,
 } from "../actions";
+import type { ActionState } from "@/lib/action-state";
 import { FormMessage, SubmitButton } from "@/components/FormBits";
 
 export type JuriItem = {
@@ -27,7 +28,17 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
   const [editId, setEditId] = useState<number | null>(null);
   const [editKode, setEditKode] = useState<string>("");
   const [editNama, setEditNama] = useState<string>("");
-  const [editState, editFormAction, isEditPending] = useActionState(updateJuriAction, {});
+  const [editState, editFormAction, isEditPending] = useActionState(
+    async (prev: ActionState, fd: FormData) => {
+      const res = await updateJuriAction(prev, fd);
+      if (res.ok) {
+        setEditId(null);
+        router.refresh();
+      }
+      return res;
+    },
+    {},
+  );
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [page, setPage] = useState(1);
@@ -38,13 +49,6 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
     setEditKode(j.kodeJuri);
     setEditNama(j.nama);
   };
-
-  useEffect(() => {
-    if (editState?.ok) {
-      setEditId(null);
-      router.refresh();
-    }
-  }, [editState, router]);
 
   const counts = useMemo(() => {
     let active = 0;
@@ -70,13 +74,19 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
     });
   }, [juriList, q, filter]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [q, filter]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
   const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const handleQChange = (val: string) => {
+    setQ(val);
+    setPage(1);
+  };
+
+  const handleFilterChange = (next: "ALL" | "ACTIVE" | "INACTIVE") => {
+    setFilter(next);
+    setPage(1);
+  };
 
   const goToPage = (p: number) => {
     const valid = Math.min(totalPages, Math.max(1, p));
@@ -95,12 +105,12 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
             className="input text-base py-2.5"
             placeholder="Cari nama atau ID dewan juri…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => handleQChange(e.target.value)}
           />
           {q && (
             <button
               type="button"
-              onClick={() => setQ("")}
+              onClick={() => handleQChange("")}
               className="btn btn-ghost btn-sm"
               aria-label="Bersihkan pencarian"
             >
@@ -113,7 +123,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
           <div className="flex rounded-lg border border-line bg-panel2 p-1">
             <button
               type="button"
-              onClick={() => setFilter("ALL")}
+              onClick={() => handleFilterChange("ALL")}
               className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "ALL" ? "bg-gold text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -122,7 +132,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilter("ACTIVE")}
+              onClick={() => handleFilterChange("ACTIVE")}
               className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "ACTIVE" ? "bg-ok text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -131,7 +141,7 @@ export function JuriManager({ juriList }: { juriList: JuriItem[] }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilter("INACTIVE")}
+              onClick={() => handleFilterChange("INACTIVE")}
               className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
                 filter === "INACTIVE" ? "bg-warn text-ink" : "text-[#ded7c8] hover:text-white"
               }`}

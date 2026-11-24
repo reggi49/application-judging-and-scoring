@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiUser } from "@/lib/dal";
+import { db } from "@/lib/db";
 import { buildRanking } from "@/lib/ranking";
-import { getEvent } from "@/lib/event";
 
 export const runtime = "nodejs";
 
@@ -9,7 +9,11 @@ export async function GET() {
   const admin = await apiUser("ADMIN");
   if (!admin) return new NextResponse("Unauthorized", { status: 401 });
 
-  const [data, ev] = await Promise.all([buildRanking(), getEvent()]);
+  const [data, waRows] = await Promise.all([
+    buildRanking(),
+    db.karya.findMany({ where: { deletedAt: null }, select: { id: true, whatsapp: true } }),
+  ]);
+  const waByKaryaId = new Map(waRows.map((w) => [w.id, w.whatsapp ?? ""]));
 
   // Susun baris CSV
   const headers = [
@@ -19,6 +23,7 @@ export async function GET() {
     "Nama Karya",
     "ID Peserta",
     "Nama Peserta",
+    "No. WhatsApp",
     "Juri Final",
     "Juri Total",
     ...data.juri.map((j) => `Skor ${j.kodeJuri} (${j.nama})`),
@@ -52,6 +57,7 @@ export async function GET() {
       r.namaKarya,
       r.kodePeserta,
       r.namaPeserta,
+      waByKaryaId.get(r.karyaId) ?? "",
       r.juriFinal,
       r.juriTotal,
       ...data.juri.map((j) => perJuriMap.get(j.id) ?? "-"),

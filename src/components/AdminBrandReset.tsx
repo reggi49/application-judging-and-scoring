@@ -65,25 +65,31 @@ export function AdminBrandReset({
   }, []);
 
   useEffect(() => {
-    if (modalOpen) {
-      loadBackups();
-    }
+    if (!modalOpen) return;
+    const timer = setTimeout(() => {
+      void loadBackups();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [modalOpen, loadBackups]);
 
   useEffect(() => {
-    if (resetState.ok) {
+    if (!resetState.ok) return;
+    const timer = setTimeout(() => {
       setBackupName("");
       setResetCode("");
-      loadBackups();
-    }
-  }, [resetState, loadBackups]);
+      void loadBackups();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [resetState.ok, loadBackups]);
 
   useEffect(() => {
-    if (restoreState.ok) {
+    if (!restoreState.ok) return;
+    const timer = setTimeout(() => {
       setRestoreCode("");
-      loadBackups();
-    }
-  }, [restoreState, loadBackups]);
+      void loadBackups();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [restoreState.ok, loadBackups]);
 
   const handleLogoClick = () => {
     clickCountRef.current += 1;

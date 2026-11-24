@@ -19,7 +19,13 @@ export function AppNavMenu({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
 
   const isItemActive = (href: string) => {
     if (href === home) return pathname === home;
@@ -27,10 +33,6 @@ export function AppNavMenu({
   };
 
   const activeItem = nav.find((n) => isItemActive(n.href));
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;

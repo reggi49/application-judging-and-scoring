@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DeleteButton } from "@/components/DeleteButton";
 import { deletePesertaAction } from "../actions";
 
@@ -31,13 +31,14 @@ export function AdminPesertaTable({ items }: { items: AdminPesertaItem[] }) {
     );
   }, [items, q]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [q]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
   const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const handleQChange = (val: string) => {
+    setQ(val);
+    setPage(1);
+  };
 
   const goToPage = (p: number) => {
     const validPage = Math.min(totalPages, Math.max(1, p));
@@ -53,12 +54,12 @@ export function AdminPesertaTable({ items }: { items: AdminPesertaItem[] }) {
             className="input text-base py-2.5"
             placeholder="Cari ID akronim / nama bengkel peserta…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => handleQChange(e.target.value)}
           />
           {q && (
             <button
               type="button"
-              onClick={() => setQ("")}
+              onClick={() => handleQChange("")}
               className="btn btn-ghost btn-sm"
               aria-label="Bersihkan pencarian"
             >

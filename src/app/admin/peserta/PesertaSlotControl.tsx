@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { syncTotalPesertaAction } from "../actions";
 import { FormMessage } from "@/components/FormBits";
 
@@ -9,10 +9,12 @@ const PRESETS = [25, 50, 70, 75, 100];
 export function PesertaSlotControl({ currentTotal }: { currentTotal: number }) {
   const [state, formAction, isPending] = useActionState(syncTotalPesertaAction, {});
   const [customTotal, setCustomTotal] = useState(String(currentTotal));
+  const [prevTotal, setPrevTotal] = useState(currentTotal);
 
-  useEffect(() => {
+  if (currentTotal !== prevTotal) {
+    setPrevTotal(currentTotal);
     setCustomTotal(String(currentTotal));
-  }, [currentTotal]);
+  }
 
   return (
     <div className="card mb-5 p-4 sm:p-5 space-y-3">

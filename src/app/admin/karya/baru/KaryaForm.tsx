@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useActionState, useId, useState } from "react";
-import type { ActionState } from "@/lib/action-state";
 import { createKaryaAction } from "../../actions";
 import { FormMessage, SubmitButton } from "@/components/FormBits";
 

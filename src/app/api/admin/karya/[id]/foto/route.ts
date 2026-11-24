@@ -8,6 +8,36 @@ import { processAndStoreImage, removeStoredImage, UploadError } from "@/lib/imag
 
 export const runtime = "nodejs";
 
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Tidak diizinkan." }, { status: 401 });
+
+  const karyaId = Number((await params).id);
+  if (!Number.isInteger(karyaId)) return NextResponse.json({ error: "ID tidak valid." }, { status: 400 });
+
+  const karya = await db.karya.findFirst({
+    where: { id: karyaId, deletedAt: null, peserta: { deletedAt: null } },
+    include: {
+      peserta: true,
+      gambar: { orderBy: [{ urutan: "asc" }, { id: "asc" }], select: { id: true } },
+    },
+  });
+  if (!karya) return NextResponse.json({ error: "Karya tidak ditemukan." }, { status: 404 });
+
+  return NextResponse.json(
+    {
+      id: karya.id,
+      kode: karya.kodeKarya,
+      nama: karya.namaKarya,
+      peserta: karya.peserta.nama,
+      whatsapp: karya.whatsapp ?? "",
+      deskripsi: karya.deskripsi ?? "",
+      fotos: karya.gambar,
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Origin tidak diizinkan." }, { status: 403 });
   const user = await apiUser();
@@ -77,12 +107,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Tidak diizinkan." }, { status: 401 });
 
+  const karyaId = Number((await params).id);
+  if (!Number.isInteger(karyaId)) return NextResponse.json({ error: "ID karya tidak valid." }, { status: 400 });
+
   const url = new URL(req.url);
   const fotoId = Number(url.searchParams.get("fotoId"));
   if (!Number.isInteger(fotoId)) return NextResponse.json({ error: "ID foto tidak valid." }, { status: 400 });
 
   const g = await db.karyaGambar.findUnique({ where: { id: fotoId }, include: { karya: true } });
-  if (!g) return NextResponse.json({ error: "Foto tidak ditemukan." }, { status: 404 });
+  if (!g || g.karyaId !== karyaId) return NextResponse.json({ error: "Foto tidak ditemukan." }, { status: 404 });
 
   await db.$transaction(async (tx) => {
     await tx.karyaGambar.delete({ where: { id: fotoId } });
@@ -107,34 +140,62 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const karyaId = Number((await params).id);
   if (!Number.isInteger(karyaId)) return NextResponse.json({ error: "ID tidak valid." }, { status: 400 });
 
-  let body: { namaKarya?: string; deskripsi?: string; namaPeserta?: string } = {};
+  let body: { nama?: string; namaKarya?: string; deskripsi?: string; namaPeserta?: string; whatsapp?: string } = {};
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const rawNama =
+    typeof body.nama === "string"
+      ? body.nama
+      : typeof body.namaPeserta === "string"
+        ? body.namaPeserta
+        : undefined;
+  const namaPeserta = rawNama !== undefined ? rawNama.trim().slice(0, 150) : undefined;
   const namaKarya = typeof body.namaKarya === "string" ? body.namaKarya.trim().slice(0, 150) : undefined;
   const deskripsi = typeof body.deskripsi === "string" ? body.deskripsi.trim().slice(0, 2000) : undefined;
-  const namaPeserta = typeof body.namaPeserta === "string" ? body.namaPeserta.trim().slice(0, 150) : undefined;
+
+  let whatsapp: string | null | undefined;
+  if (typeof body.whatsapp === "string") {
+    const cleaned = body.whatsapp.trim();
+    if (cleaned !== "" && !/^\d{1,25}$/.test(cleaned)) {
+      return NextResponse.json({ error: "Nomor WhatsApp harus berupa angka saja (maks 25 digit)." }, { status: 400 });
+    }
+    whatsapp = cleaned === "" ? null : cleaned;
+  }
 
   const karya = await db.karya.findUnique({ where: { id: karyaId }, include: { peserta: true } });
   if (!karya) return NextResponse.json({ error: "Karya tidak ditemukan." }, { status: 404 });
 
-  await db.$transaction(async (tx) => {
-    await tx.karya.update({
+  const resolvedNamaKarya =
+    namaKarya !== undefined
+      ? namaKarya
+      : namaPeserta !== undefined
+        ? namaPeserta || `Nomor ${karya.kodeKarya}`
+        : undefined;
+  const resolvedNamaPeserta =
+    namaPeserta !== undefined ? namaPeserta || `Peserta #${karya.kodeKarya}` : undefined;
+
+  const updated = await db.$transaction(async (tx) => {
+    const k = await tx.karya.update({
       where: { id: karyaId },
       data: {
-        ...(namaKarya !== undefined ? { namaKarya } : {}),
-        ...(deskripsi !== undefined ? { deskripsi } : {}),
+        ...(resolvedNamaKarya !== undefined ? { namaKarya: resolvedNamaKarya } : {}),
+        ...(whatsapp !== undefined ? { whatsapp } : {}),
+        ...(deskripsi !== undefined ? { deskripsi: deskripsi === "" ? null : deskripsi } : {}),
       },
     });
-    if (namaPeserta && karya.pesertaId) {
-      await tx.peserta.update({
+    let pNama = karya.peserta?.nama ?? "";
+    if (resolvedNamaPeserta !== undefined && karya.pesertaId) {
+      const p = await tx.peserta.update({
         where: { id: karya.pesertaId },
-        data: { nama: namaPeserta },
+        data: { nama: resolvedNamaPeserta },
       });
+      pNama = p.nama;
     }
+    return { k, pNama };
   });
 
   await audit({
@@ -142,10 +203,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     aksi: "UPDATE_INFO_KARYA",
     entitas: "karya",
     entitasId: karyaId,
-    dataBaru: { namaKarya, deskripsi, namaPeserta },
+    dataBaru: { namaKarya: resolvedNamaKarya, namaPeserta: resolvedNamaPeserta, whatsapp, deskripsi },
   });
 
   revalidatePath(`/admin/karya/${karyaId}`);
+  revalidatePath("/admin/karya");
   revalidatePath(`/juri/karya/${karya.kodeKarya}`);
-  return NextResponse.json({ ok: true });
+  revalidatePath("/juri");
+  revalidatePath("/admin");
+  revalidatePath("/admin/nilai");
+  revalidatePath("/admin/nilai/input");
+  revalidatePath("/admin/berita-acara");
+  return NextResponse.json({
+    ok: true,
+    nama: updated.k.namaKarya,
+    peserta: updated.pNama,
+    whatsapp: updated.k.whatsapp ?? "",
+    deskripsi: updated.k.deskripsi ?? "",
+  });
 }

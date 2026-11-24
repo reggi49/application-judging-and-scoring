@@ -297,19 +297,46 @@ export async function createKaryaAction(_p: ActionState, fd: FormData): Promise<
 export async function updateKaryaAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireAdmin();
   const id = Number(fd.get("id"));
-  const old = await db.karya.findFirst({ where: { id, deletedAt: null } });
+  const old = await db.karya.findFirst({ where: { id, deletedAt: null }, include: { peserta: true } });
   if (!old) return fail("Karya tidak ditemukan.");
   const r = z
     .object({
       namaKarya: karyaSchema.shape.namaKarya,
+      whatsapp: z
+        .string()
+        .trim()
+        .regex(/^\d*$/, "Nomor WhatsApp harus berupa angka saja.")
+        .max(25, "Nomor WhatsApp maksimal 25 digit.")
+        .optional()
+        .transform((v) => (v ? v : null)),
       deskripsi: karyaSchema.shape.deskripsi,
     })
     .safeParse(Object.fromEntries(fd));
   if (!r.success) return fail(firstIssue(r.error));
-  await db.karya.update({ where: { id }, data: r.data });
-  await audit({ userId: admin.id, aksi: "UBAH_KARYA", entitas: "karya", entitasId: id, dataLama: { namaKarya: old.namaKarya, deskripsi: old.deskripsi }, dataBaru: r.data });
+
+  const hasShowDesk = fd.get("includeDeskripsi") === "1";
+  const dataToSave = hasShowDesk
+    ? r.data
+    : { namaKarya: r.data.namaKarya, whatsapp: r.data.whatsapp };
+
+  await db.$transaction(async (tx) => {
+    await tx.karya.update({ where: { id }, data: dataToSave });
+    if (old.pesertaId) {
+      await tx.peserta.update({ where: { id: old.pesertaId }, data: { nama: r.data.namaKarya } });
+    }
+  });
+  await audit({
+    userId: admin.id,
+    aksi: "UBAH_KARYA",
+    entitas: "karya",
+    entitasId: id,
+    dataLama: { namaKarya: old.namaKarya, whatsapp: old.whatsapp, deskripsi: old.deskripsi },
+    dataBaru: dataToSave,
+  });
   revalidatePath(`/admin/karya/${id}`);
   revalidatePath("/admin/karya");
+  revalidatePath(`/juri/karya/${old.kodeKarya}`);
+  revalidatePath("/juri");
   return { ok: true, message: "Perubahan disimpan." };
 }
 
@@ -567,6 +594,7 @@ export async function unlockPenilaianAction(fd: FormData) {
 }
 
 export async function backupNowAction(_p: ActionState): Promise<ActionState> {
+  void _p;
   const admin = await requireAdmin();
   try {
     const f = await runBackup("manual");

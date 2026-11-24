@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { SubmitButton } from "@/components/FormBits";
 import { unlockPenilaianAction } from "../actions";
 
@@ -71,14 +71,19 @@ export function RekapNilaiTable({
     });
   }, [rows, q, statusFilter]);
 
-  // Reset ke halaman 1 setiap kali query pencarian atau filter status berganti
-  useEffect(() => {
-    setPage(1);
-  }, [q, statusFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
   const paginatedRows = filteredRows.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const handleQChange = (val: string) => {
+    setQ(val);
+    setPage(1);
+  };
+
+  const handleStatusChange = (next: "ALL" | "FINAL" | "DRAFT") => {
+    setStatusFilter(next);
+    setPage(1);
+  };
 
   const goToPage = (p: number) => {
     const valid = Math.min(totalPages, Math.max(1, p));
@@ -112,12 +117,12 @@ export function RekapNilaiTable({
             className="input text-base py-2.5"
             placeholder="Cari ID karya / peserta / juri…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => handleQChange(e.target.value)}
           />
           {q && (
             <button
               type="button"
-              onClick={() => setQ("")}
+              onClick={() => handleQChange("")}
               className="btn btn-ghost btn-sm"
               aria-label="Bersihkan pencarian"
             >
@@ -130,7 +135,7 @@ export function RekapNilaiTable({
           <div className="flex rounded-lg border border-line bg-panel2 p-1">
             <button
               type="button"
-              onClick={() => setStatusFilter("ALL")}
+              onClick={() => handleStatusChange("ALL")}
               className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
                 statusFilter === "ALL" ? "bg-gold text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -139,7 +144,7 @@ export function RekapNilaiTable({
             </button>
             <button
               type="button"
-              onClick={() => setStatusFilter("FINAL")}
+              onClick={() => handleStatusChange("FINAL")}
               className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
                 statusFilter === "FINAL" ? "bg-ok text-ink" : "text-[#ded7c8] hover:text-white"
               }`}
@@ -148,7 +153,7 @@ export function RekapNilaiTable({
             </button>
             <button
               type="button"
-              onClick={() => setStatusFilter("DRAFT")}
+              onClick={() => handleStatusChange("DRAFT")}
               className={`rounded px-3 py-1.5 text-xs font-bold transition-all ${
                 statusFilter === "DRAFT" ? "bg-warn text-ink" : "text-[#ded7c8] hover:text-white"
               }`}

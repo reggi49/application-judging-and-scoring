@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
-import type { ActionState } from "@/lib/action-state";
 import { updateKaryaAction, deleteFotoAction, setCoverAction, moveFotoAction } from "../../actions";
 import { FormMessage, SubmitButton } from "@/components/FormBits";
 
@@ -24,6 +23,7 @@ export function KaryaDetailManager({
     namaKarya: string;
     akronimKarya: string;
     noUrut: number;
+    whatsapp: string | null;
     deskripsi: string | null;
     peserta: { id: number; kodePeserta: string; nama: string };
     gambar: FotoItem[];
@@ -32,6 +32,8 @@ export function KaryaDetailManager({
 }) {
   const router = useRouter();
   const [updateState, updateFormAction] = useActionState(updateKaryaAction, {});
+  const [whatsapp, setWhatsapp] = useState(() => (karya.whatsapp ?? "").replace(/\D/g, ""));
+  const [showDeskripsi, setShowDeskripsi] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +96,7 @@ export function KaryaDetailManager({
 
             <div>
               <label htmlFor="namaKarya" className="label">
-                Nama Karya *
+                Nama *
               </label>
               <input
                 id="namaKarya"
@@ -106,18 +108,56 @@ export function KaryaDetailManager({
             </div>
 
             <div>
-              <label htmlFor="deskripsi" className="label">
-                Deskripsi & Konsep
+              <label htmlFor="whatsapp" className="label">
+                Nomor WhatsApp
               </label>
-              <textarea
-                id="deskripsi"
-                name="deskripsi"
-                rows={4}
-                className="input"
-                defaultValue={karya.deskripsi ?? ""}
-                placeholder="Deskripsi konsep jok motor, bahan yang digunakan, dll."
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={25}
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 25))}
+                className="input num"
+                placeholder="08xxxxxxxxxx (angka saja)"
               />
             </div>
+
+            <div>
+              <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-line bg-panel2/70 px-3 py-2.5 hover:border-gold/60 transition-colors">
+                <span className="flex items-center gap-2.5 text-xs font-bold text-cream">
+                  <input
+                    type="checkbox"
+                    checked={showDeskripsi}
+                    onChange={(e) => setShowDeskripsi(e.target.checked)}
+                    className="h-4 w-4 accent-gold cursor-pointer rounded"
+                  />
+                  <span>Tampilkan Deskripsi & Konsep</span>
+                </span>
+                {karya.deskripsi && !showDeskripsi && (
+                  <span className="badge badge-gold text-[10px]">Terisi</span>
+                )}
+              </label>
+              <input type="hidden" name="includeDeskripsi" value={showDeskripsi ? "1" : "0"} />
+            </div>
+
+            {showDeskripsi && (
+              <div>
+                <label htmlFor="deskripsi" className="label">
+                  Deskripsi & Konsep
+                </label>
+                <textarea
+                  id="deskripsi"
+                  name="deskripsi"
+                  rows={4}
+                  className="input"
+                  defaultValue={karya.deskripsi ?? ""}
+                  placeholder="Deskripsi konsep jok motor, bahan yang digunakan, dll."
+                />
+              </div>
+            )}
 
             <FormMessage state={updateState} />
 
